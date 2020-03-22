@@ -74,8 +74,7 @@ writer = None
 (W, H) = (None, None)
 
 # loop over frames from the video file stream
-counter = 0
-while counter <= 1000:
+while True:
     time0 = time.time()
     # read the next frame from the file
     (grabbed, frame) = vs.read()
@@ -95,7 +94,7 @@ while counter <= 1000:
     # and associated probabilities
     time2 = time.time()
 
-    blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (96, 96),
+    blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (192, 192),
                                  swapRB=True, crop=False)
     net.setInput(blob)
     start = time.time()
@@ -169,12 +168,6 @@ while counter <= 1000:
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
     fps.update()
-
-    # print(time2-time0,'Time of Grabbing Image \n')
-    # print(time3-time2,'Time of YOLO algorithm \n')
-    # print(time4-time3,'Time of Image showing \n')
-    # time.sleep(2)
-    counter += 1
 # stop the timer and display FPS information
 fps.stop()
 print("[INFO] elasped time: {:.2f}".format(fps.elapsed()))

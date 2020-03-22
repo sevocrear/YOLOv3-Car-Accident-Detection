@@ -6,7 +6,7 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 
-img = 'images/baggage_claim.jpg'
+img = 'images/CCTV_test.jpg'
 thr_param = 0.3
 conf_param = 0.5
 
@@ -39,7 +39,7 @@ ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 # construct a blob from the input image and then perform a forward
 # pass of the YOLO object detector, giving us our bounding boxes and
 # associated probabilities
-blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416),
+blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (96, 96),
 	swapRB=True, crop=False)
 net.setInput(blob)
 start = time.time()
