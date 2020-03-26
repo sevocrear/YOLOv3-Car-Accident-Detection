@@ -24,8 +24,8 @@ COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
 	dtype="uint8")
 
 # derive the paths to the YOLO weights and model configuration
-weightsPath = os.path.sep.join(['yolo-coco', "yolov3.weights"])
-configPath = os.path.sep.join(['yolo-coco', "yolov3.cfg"])
+weightsPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.weights"])
+configPath = os.path.sep.join(['yolo-coco/weights', "yolov3.cfg"])
 
 # load our YOLO object detector trained on COCO dataset (80 classes)
 # and determine only the *output* layer names that we need from YOLO

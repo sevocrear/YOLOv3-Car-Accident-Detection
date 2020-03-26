@@ -1,6 +1,6 @@
 !/bin/bash
 
-make '/weights' directory if it does not exist and cd into it
+# make '/weights' directory if it does not exist and cd into it
 mkdir -p weights && cd weights
 
 # copy darknet weight files, continue '-c' if partially downloaded
