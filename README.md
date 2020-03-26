@@ -1,4 +1,4 @@
-# Implementing YOLO technique in order to detect car accidents
+# Implementing YOLO technique in order to detect car accidents and to Detect an invasion of private territory
 
 In this repository you could find 3 scripts in order to implement YOLOv3 algorithm on videos, images and camera.
 
