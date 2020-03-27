@@ -55,11 +55,24 @@ def BuildAndUpdate(boxes, cars_dict):
   else:
     cars_labels = list(cars_dict) 
     for i in cars_labels:
-      locations = cars_dict[i][0]
-      old_center = locations[len(locations)-1]
-      closest_center, vector, distance, idx = get_closest_center(old_center,centers)
-      car_bounds = boxes[idx][2:4]
-      if distance <= min(car_bounds)/10:
-        cars_dict[i]= update_dict(cars_dict[i],closest_center, vector, distance)
+      if len(centers)>0:
+        locations = cars_dict[i][0]
+        old_center = locations[len(locations)-1]
+        closest_center, vector, distance, idx = get_closest_center(old_center,centers)
+        car_bounds = boxes[idx][2:4]
+        if distance <= min(car_bounds)/1.5:
+          cars_dict[i]= update_dict(cars_dict[i],closest_center, vector, distance)
+          del centers[idx]
+    
+    int_labels = []
+    for car_label in cars_labels:
+      int_labels.append(int(car_label))
+   
+    if len(centers)> 0:
+      for center in centers:
+        new_label = str(max(int_labels)+1)
+        cars_dict[new_label] = [[center],[[0,0]],[0],[0]]
+
+        
 
   return cars_dict

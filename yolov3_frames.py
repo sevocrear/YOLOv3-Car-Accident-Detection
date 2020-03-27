@@ -11,7 +11,7 @@ from vehicle_tracking import *
 thr_param = 0.3
 conf_param = 0.5
 
-img_dir = "000002" # Enter Directory of all images 
+img_dir = "000028" # Enter Directory of all images 
 data_path = os.path.join(img_dir,'*g')
 
 frame_counter = len(glob.glob(data_path))
@@ -127,9 +127,9 @@ for f1 in files:
 			#print(new_boxes)
 			cars_dict = BuildAndUpdate(new_boxes, cars_dict)
 			cars_labels = list(cars_dict)
-			for boxes in new_boxes:
-				(x, y) = (boxes[0], boxes[1])
-				(w, h) = (boxes[2], boxes[3])
+			for i in idxs.flatten():
+				(x, y) = (boxes[i][0], boxes[i][1])
+				(w, h) = (boxes[i][2], boxes[i][3])
 				# draw a bounding box rectangle and label on the image
 				color = [int(c) for c in COLORS[classIDs[i]]]
 				cv2.rectangle(image, (x, y), (x + w, y + h), color, 1)
@@ -144,6 +144,10 @@ for f1 in files:
 					car_path = np.asarray(car_path,dtype=np.int32)
 					car_path = car_path.reshape((-1,1,2))
 					cv2.polylines(image,car_path,True,(0,0,255))
+					label_location = car_path[len(car_path)-1][0]
+					#print(label_location)
+					cv2.putText(image, car_label, (label_location[0], label_location[1]), cv2.FONT_HERSHEY_SIMPLEX,
+					0.5, color, 1)
 					
 
 			
