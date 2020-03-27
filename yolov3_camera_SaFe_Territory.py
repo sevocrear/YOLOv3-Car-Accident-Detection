@@ -7,10 +7,19 @@ import cv2
 import os
 import time
 import datetime
-vd_in = 'videos/overpass.mp4'  # path to input video
+h_NN = 192
+w_NN = 192
+
+h_show = 416*2
+w_show = 256*2
+
 thr_param = 0.3  # threshold when applying non-maxima suppression
 conf_param = 0.5  # minimum probability to filter weak detections
-vd_out = 'output/overpass_out.mp4'  # path to output video
+
+warn_img = 'warning.png'
+warn_image = cv2.imread(warn_img)
+(H, W) = warn_image.shape[:2]
+warn_image = cv2.resize(warn_image,(h_show//2,w_show//2))
 
 
 class FPS:
@@ -94,7 +103,7 @@ while True:
     # and associated probabilities
     time2 = time.time()
 
-    blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (192, 192),
+    blob = cv2.dnn.blobFromImage(frame, 1 / 255.0, (h_NN, w_NN),
                                  swapRB=True, crop=False)
     net.setInput(blob)
     start = time.time()
@@ -162,7 +171,13 @@ while True:
     time3 = time.time()
 
     # Display the resulting frame
-    cv2.imshow('Frame', cv2.resize(frame,(416,256)))
+    frame = cv2.resize(frame,(h_show,w_show))
+    if len(idxs) > 0:
+        # warn_image=cv2.addWeighted(frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:],0.4,warn_image,0.1,0)
+        frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:] = np.where(warn_image>70,frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:], warn_image)
+        # frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:] = warn_image
+        # frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:] = warn_image
+    cv2.imshow('Frame', frame)
 
     time4 = time.time()
     if cv2.waitKey(1) & 0xFF == ord('q'):
