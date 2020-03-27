@@ -1,3 +1,8 @@
+# This code implement YOLOv3 technique in order to detect people and cars on the camera frames. 
+# The classes YOLOv3 trained on you can find on the net.
+# This implementation might be needed for invasion of the territory detection.
+
+
 # import the necessary packages
 import numpy as np
 import argparse
@@ -7,6 +12,7 @@ import cv2
 import os
 import time
 import datetime
+
 h_NN = 192
 w_NN = 192
 
@@ -16,7 +22,7 @@ w_show = 256*2
 thr_param = 0.3  # threshold when applying non-maxima suppression
 conf_param = 0.5  # minimum probability to filter weak detections
 
-warn_img = 'warning.png'
+warn_img = 'files/warning.png'
 warn_image = cv2.imread(warn_img)
 (H, W) = warn_image.shape[:2]
 warn_image = cv2.resize(warn_image,(h_show//2,w_show//2))
@@ -176,7 +182,7 @@ while True:
         # warn_image=cv2.addWeighted(frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:],0.4,warn_image,0.1,0)
         frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:] = np.where(warn_image>70,frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:], warn_image)
         # frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:] = warn_image
-        # frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:] = warn_image
+        # frame[frame.shape[0]//4: frame.shape[0]//4+warn_image.shape[0], frame.shape[1]//4: frame.shape[1]//4+warn_image.shape[1],:] = warn_image 
     cv2.imshow('Frame', frame)
 
     time4 = time.time()

@@ -1,3 +1,6 @@
+# This code implements YOLOv3 technique in order to detect objects on the camera frames. 
+# The classes YOLOv3 trained on you can find on the net.
+
 # import the necessary packages
 import numpy as np
 import argparse
@@ -7,10 +10,10 @@ import cv2
 import os
 import time
 import datetime
-vd_in = 'videos/overpass.mp4'  # path to input video
+
+
 thr_param = 0.3  # threshold when applying non-maxima suppression
 conf_param = 0.5  # minimum probability to filter weak detections
-vd_out = 'output/overpass_out.mp4'  # path to output video
 
 
 class FPS:
@@ -119,7 +122,7 @@ while True:
 
             # filter out weak predictions by ensuring the detected
             # probability is greater than the minimum probability
-            if confidence > conf_param and (classID == 0 or classID == 2):
+            if confidence > conf_param:
                 # scale the bounding box coordinates back relative to
                 # the size of the image, keeping in mind that YOLO
                 # actually returns the center (x, y)-coordinates of
