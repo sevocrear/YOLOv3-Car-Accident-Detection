@@ -1,3 +1,8 @@
+# This code implement YOLOv3 technique in order to detect people and cars on the camera frames. 
+# The classes YOLOv3 trained on you can find on the net.
+# This implementation might be needed for invasion of the territory detection.
+
+
 # import the necessary packages
 import numpy as np
 import argparse

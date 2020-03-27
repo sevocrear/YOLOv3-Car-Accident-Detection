@@ -1,3 +1,6 @@
+# This code implements YOLOv3 technique in order to detect car accidents on the video frames. 
+# If you want to use this with camera, you can easily modify it
+
 # import the necessary packages
 import numpy as np
 import argparse
@@ -6,7 +9,7 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 import glob
-from vehicle_tracking import *
+from vehicle_tracking import * # functions for tracking
 
 thr_param = 0.3
 conf_param = 0.5

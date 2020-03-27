@@ -1,3 +1,5 @@
+# This code implements YOLOv3 technique in order to detect objects on the video frames. 
+
 # import the necessary packages
 import numpy as np
 import imutils
@@ -11,7 +13,7 @@ import os
 inp_video = 'videos/airport.mp4'
 thr_param = 0.3
 conf_param = 0.5
-out_video = 'output/airport2.mp4'
+out_video = 'output/airport2_out.mp4'
 
 # load the COCO class labels our YOLO model was trained on
 labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
