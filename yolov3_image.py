@@ -1,3 +1,4 @@
+# This code implements YOLOv3 technique in order to detect objects on the image
 # import the necessary packages
 import numpy as np
 import argparse
@@ -67,7 +68,7 @@ for output in layerOutputs:
 
 		# filter out weak predictions by ensuring the detected
 		# probability is greater than the minimum probability
-		if confidence > conf_param and (classID == 0 or classID == 2):
+		if confidence > conf_param:
 			# scale the bounding box coordinates back relative to the
 			# size of the image, keeping in mind that YOLO actually
 			# returns the center (x, y)-coordinates of the bounding
