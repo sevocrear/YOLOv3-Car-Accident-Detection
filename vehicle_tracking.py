@@ -20,8 +20,7 @@ def get_closest_center(old_center, new_centers):
   for i in new_centers: 
     motion_vector = np.subtract(i,old_center)                       #to get position difference
     distance = np.sqrt(motion_vector[0]**2 + motion_vector[1]**2)   # distance between car center and new center
-    normal = LA.norm(motion_vector)
-    motion_vector = np.divide(motion_vector,normal)                 #normalizing motion ventor for later use for path angels
+    motion_vector = np.divide(motion_vector,distance+0.000000001)                 #normalizing motion ventor for later use for path angels
     centers_distance[0].append([motion_vector])                     
     centers_distance[1].append(distance)                            
   
@@ -60,7 +59,7 @@ def BuildAndUpdate(boxes, cars_dict):
       car_info = [[]for i in range(4)]
       label = str(i+1)                  #label is only a number 
       car_info[0].append(centers[i])    
-      car_info[1].append([0,0])
+      car_info[1].append([[0,0]])
       car_info[2].append(0)
       car_info[3].append(0)
       cars_dict[label]= car_info
@@ -85,7 +84,7 @@ def BuildAndUpdate(boxes, cars_dict):
     if len(centers)> 0:         #checking if there are still not-assigned centers
       for center in centers:
         new_label = str(max(int_labels)+1)        #creating new label for new car
-        cars_dict[new_label] = [[center],[[0,0]],[0],[0]]
+        cars_dict[new_label] = [[center],[[[0,0]]],[0],[0]]
 
         
 

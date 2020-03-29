@@ -29,8 +29,8 @@ for path in dataset_path:
 	print('Number of frames:',frame_counter)
 
 	files = []
-	for q in range(frame_counter):
-	#for q in range(10):
+	#for q in range(frame_counter):
+	for q in range(10):
 		path = folders[0]+'/'+str(q)+'.jpg'
 		files.append(path)
 
@@ -179,6 +179,7 @@ for path in dataset_path:
 		direction = cars_dict[label][1]
 		velocity = cars_dict[label][2]
 		acceleration = cars_dict[label][3]
+		
 		x_pos = []
 		y_pos = []
 		angle = []
@@ -187,7 +188,7 @@ for path in dataset_path:
 		for i in range(len(position)):
 			x_pos.append(position[i][0])
 			y_pos.append(position[i][1])
-			angle.append(np.arccos(direction[0]))
+			angle.append(np.arccos(direction[i][0][0]))
 			time_frame.append(i)
 
 		cars_plot_data[label]['x'] = x_pos
