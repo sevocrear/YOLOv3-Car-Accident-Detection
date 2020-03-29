@@ -20,7 +20,7 @@ def get_closest_center(old_center, new_centers):
   for i in new_centers: 
     motion_vector = np.subtract(i,old_center)                       #to get position difference
     distance = np.sqrt(motion_vector[0]**2 + motion_vector[1]**2)   # distance between car center and new center
-    motion_vector = np.divide(motion_vector,distance+0.000000001)                 #normalizing motion ventor for later use for path angels
+    motion_vector = np.divide(motion_vector,distance+0.000000001)    #normalizing motion ventor for later use for path angels
     centers_distance[0].append([motion_vector])                     
     centers_distance[1].append(distance)                            
   
