@@ -13,20 +13,20 @@ from vehicle_tracking import * # functions for tracking
 
 thr_param = 0.3
 conf_param = 0.5
-data_dir = "Dataset/"
-dataset_path = glob.glob(data_dir+"*/")
-print('path',dataset_path)
+
+data_dir = "Dataset/" 	#dataset directory
+dataset_path = glob.glob(data_dir+"*/") 		#reading all sub-directories in folder
+print('Sub-directories',dataset_path)
+
 for path in dataset_path:
 	split_path = path.split('/')
-	print('sp',split_path)
 	folders = glob.glob(path)
-	print('folder',folders)
-	img_dir = split_path[1] # Enter Directory of all images 
+	print('Processing folder',folders[0], '...')
+	img_dir = split_path[1]  
 	data_path = os.path.join(path,'*g')
 
 	frame_counter = len(glob.glob(data_path))
-	print(data_path)
-	print(frame_counter)
+	print('Number of frames:',frame_counter)
 
 	files = []
 	for q in range(frame_counter):
@@ -34,14 +34,13 @@ for path in dataset_path:
 		path = folders[0]+'/'+str(q)+'.jpg'
 		files.append(path)
 
-	print(files)
+	
 
 	cars_dict = {}
 	counter = 1
 	for f1 in files:
 		image = cv2.imread(f1)
-		print(type(image))
-		print(str(counter)+'/'+str(frame_counter))
+		print('Processing frame:'+str(counter)+'/'+str(frame_counter),'in folder:'+folders[0]+'...')
 		counter +=1
 
 		if type(image) is np.ndarray:	
@@ -129,12 +128,13 @@ for path in dataset_path:
 			# ensure at least one detection exists
 			if len(idxs) > 0:
 				# loop over the indexes we are keeping
+				# building a list or centers we're keeping
 				new_boxes = []
 				for i in idxs.flatten():
 					new_boxes.append(boxes[i]) 
-					# extract the bounding box coordinates
 					
-				#print(new_boxes)
+					
+				# building cars data
 				cars_dict = BuildAndUpdate(new_boxes, cars_dict)
 				cars_labels = list(cars_dict)
 				for i in idxs.flatten():
@@ -149,29 +149,30 @@ for path in dataset_path:
 				
 				for car_label in cars_labels:
 					car_path = cars_dict[car_label][0]
-					#print('p',car_path)
+					# plotting car path on image and printing car label
 					if len(car_path)> 1:
 						car_path = np.asarray(car_path,dtype=np.int32)
 						car_path = car_path.reshape((-1,1,2))
 						cv2.polylines(image,car_path,True,(0,0,255))
 						label_location = car_path[len(car_path)-1][0]
-						#print(label_location)
 						cv2.putText(image, car_label, (label_location[0], label_location[1]), cv2.FONT_HERSHEY_SIMPLEX,
 						0.5, color, 1)
 						
-
-				
 
 			# show the output image
 			#cv2.imshow("Image", image)
 			#time.sleep(2)
 			#cv2.waitKey(0)
-			print(classIDs)
+			print('ClassIDs:',classIDs)
 
 	#cv2.waitKey(0)
 	print(cars_dict)
 	print(list(cars_dict))
+
+	#saving output image in folder output/
 	cv2.imwrite('output/'+img_dir+'_final_frame.png', image)
+
+	#building dictionary of plot data
 	cars_plot_data = {}
 	for label in cars_labels: 
 		position  = cars_dict[label][0]
@@ -196,6 +197,8 @@ for path in dataset_path:
 		cars_plot_data[label]['velocity'] = velocity
 		cars_plot_data[label]['acceleration'] = acceleration
 
+	#plotting and saving cars information from each video
+	#plots can be found in folder "figures/"
 	plt.figure(figsize=(10,8))
 	for label in cars_labels: 
 		plt.plot(cars_plot_data[label]['x'],cars_plot_data[label]['y'])
@@ -236,8 +239,8 @@ for path in dataset_path:
 	plt.xlabel('frame')
 	plt.ylabel(r'acceleration (pixel/${frame}^2$)')
 	plt.title('cars accelerations')
-
 	plt.savefig('figures/'+img_dir+'_Info.png')
 	#plt.show()
+
 	#cv2.waitKey(0)
 	cv2.destroyAllWindows()
