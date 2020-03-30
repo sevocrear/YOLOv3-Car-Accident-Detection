@@ -26,6 +26,13 @@ After that, you can run any of the scripts like:
 python3 yolov3_<aim>.py
 ```
 
+* yolov3_camera_SaFe_Territory.py - detect people and cars on the camera frames 
+* yolov3_camera.py - detect any objects on the camera frames
+* yolov3_detect.py - detect objects on the camera frames for RealSense Camera
+* yolov3_frames.py - detect car accidents on the video frames (Dataset is given)
+* yolov3_image.py - detect objects on the image (put to input)
+* yolov3_video.py - detect objects on the video frames
+
 ! If you have some troubles with OpenCV, try to do:
 
 ```bash
