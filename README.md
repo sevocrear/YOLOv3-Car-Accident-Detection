@@ -29,6 +29,5 @@ python3 yolov3_<aim>.py
 ! If you have some troubles with OpenCV, try to do:
 
 ```bash
-pip install opencv-python==4.2.0.32
-pip install opencv-contrib-python==4.2.0.32
+pip3 install opencv-python==4.2.0.32 && pip3 install opencv-contrib-python==4.2.0.32
 ```

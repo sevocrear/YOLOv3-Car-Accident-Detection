@@ -7,6 +7,9 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 
+path_of_file = os.path.abspath(__file__)
+os.chdir(os.path.dirname(path_of_file))
+
 img = 'images/CCTV_test.jpg'
 thr_param = 0.3
 conf_param = 0.5

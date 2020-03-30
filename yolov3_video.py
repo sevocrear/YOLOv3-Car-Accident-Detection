@@ -9,6 +9,8 @@ import os
 
 # construct the argument parse and parse the arguments
 
+path_of_file = os.path.abspath(__file__)
+os.chdir(os.path.dirname(path_of_file))
 
 inp_video = 'videos/airport.mp4'
 thr_param = 0.3

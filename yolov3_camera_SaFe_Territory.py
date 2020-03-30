@@ -13,6 +13,9 @@ import os
 import time
 import datetime
 
+path_of_file = os.path.abspath(__file__)
+os.chdir(os.path.dirname(path_of_file))
+
 h_NN = 192
 w_NN = 192
 
