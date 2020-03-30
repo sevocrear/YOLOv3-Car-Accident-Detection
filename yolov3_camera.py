@@ -12,6 +12,9 @@ import time
 import datetime
 
 
+path_of_file = os.path.abspath(__file__)
+os.chdir(os.path.dirname(path_of_file))
+
 thr_param = 0.3  # threshold when applying non-maxima suppression
 conf_param = 0.5  # minimum probability to filter weak detections
 

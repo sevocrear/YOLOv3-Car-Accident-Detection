@@ -13,6 +13,10 @@ import time
 import datetime
 import pyrealsense2 as rs
 
+path_of_file = os.path.abspath(__file__)
+os.chdir(os.path.dirname(path_of_file))
+
+
 vd_in = 'videos/airport.mp4'  # path to input video
 thr_param = 0.3  # threshold when applying non-maxima suppression
 conf_param = 0.5  # minimum probability to filter weak detections
