@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import glob
 from vehicle_tracking import * # functions for tracking
 
+path_of_file = os.path.abspath(__file__)
+os.chdir(os.path.dirname(path_of_file))
+
 thr_param = 0.3
 conf_param = 0.5
 
