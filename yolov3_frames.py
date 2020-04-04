@@ -29,8 +29,8 @@ for path in dataset_path:
 	print('Number of frames:',frame_counter)
 
 	files = []
-	#for q in range(frame_counter):
-	for q in range(10):
+	for q in range(frame_counter):
+	#for q in range(10):
 		path = folders[0]+'/'+str(q)+'.jpg'
 		files.append(path)
 
