@@ -10,7 +10,22 @@ import os
 import matplotlib.pyplot as plt
 import glob
 from vehicle_tracking import * # functions for tracking
+from scipy.signal import savgol_filter
 
+def check_odd_filter(x):
+	x = x
+	if x <= 2: 
+		x = 3
+	if x % 2 == 0:
+		x = x - 1
+	if x <= 3:
+		if x <=2:
+			y = 1
+		else:	
+			y = 2
+	else:
+		y = 3		
+	return (x, y)		
 path_of_file = os.path.abspath(__file__)
 os.chdir(os.path.dirname(path_of_file))
 
@@ -77,7 +92,7 @@ for path in dataset_path:
 			# construct a blob from the input image and then perform a forward
 			# pass of the YOLO object detector, giving us our bounding boxes and
 			# associated probabilities
-			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (96, 96),
+			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 256), # (96, 96) \ (192, 192) \ (256, 256)
 				swapRB=True, crop=False)
 			net.setInput(blob)
 			start = time.time()
@@ -194,6 +209,23 @@ for path in dataset_path:
 			y_pos.append(position[i][1])
 			angle.append(np.arccos(direction[i][0][0]))
 			time_frame.append(i)
+
+		# Used condition on length of the list in order not tu use filter with very small amount of data.
+		if len(x_pos) > 2:
+			window_size, polyorder = check_odd_filter(len(x_pos))
+			x_pos = savgol_filter(x_pos, window_size, polyorder)
+		if len(y_pos) > 2:
+			window_size, polyorder = check_odd_filter(len(y_pos))
+			y_pos = savgol_filter(y_pos, window_size, polyorder)
+		if len(angle) > 2:
+			window_size, polyorder = check_odd_filter(len(angle))
+			angle = savgol_filter(angle, window_size, polyorder)
+		if len(velocity) > 2:
+			window_size, polyorder = check_odd_filter(len(velocity))
+			velocity = savgol_filter(velocity, window_size, polyorder)
+		if len(acceleration) > 2:
+			window_size, polyorder = check_odd_filter(len(acceleration))
+			acceleration = savgol_filter(acceleration, window_size, polyorder)
 
 		cars_plot_data[label]['x'] = x_pos
 		cars_plot_data[label]['y'] = y_pos
