@@ -21,6 +21,23 @@ data_dir = "Dataset/" 	#dataset directory
 dataset_path = glob.glob(data_dir+"*/") 		#reading all sub-directories in folder
 print('Sub-directories',dataset_path)
 
+# load the COCO class labels our YOLO model was trained on
+labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
+LABELS = open(labelsPath).read().strip().split("\n")
+
+# initialize a list of colors to represent each possible class label
+np.random.seed(42)
+COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
+	dtype="uint8")
+
+# derive the paths to the YOLO weights and model configuration
+weightsPath = os.path.sep.join(['yolo-coco/weights', "yolov3.weights"])
+configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
+
+# load our YOLO object detector trained on COCO dataset (80 classes)
+print("[INFO] loading YOLO from disk...")
+net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
+
 for path in dataset_path:
 	split_path = path.split('/')
 	folders = glob.glob(path)
@@ -33,7 +50,7 @@ for path in dataset_path:
 
 	files = []
 	#for q in range(frame_counter):
-	for q in range(10):
+	for q in range(100):
 		path = folders[0]+'/'+str(q)+'.jpg'
 		files.append(path)
 
@@ -47,22 +64,6 @@ for path in dataset_path:
 		counter +=1
 
 		if type(image) is np.ndarray:	
-			# load the COCO class labels our YOLO model was trained on
-			labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
-			LABELS = open(labelsPath).read().strip().split("\n")
-
-			# initialize a list of colors to represent each possible class label
-			np.random.seed(42)
-			COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
-				dtype="uint8")
-
-			# derive the paths to the YOLO weights and model configuration
-			weightsPath = os.path.sep.join(['yolo-coco/weights', "yolov3.weights"])
-			configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
-
-			# load our YOLO object detector trained on COCO dataset (80 classes)
-			print("[INFO] loading YOLO from disk...")
-			net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
 
 
 			# load our input image and grab its spatial dimensions
