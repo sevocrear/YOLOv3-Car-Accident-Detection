@@ -42,7 +42,8 @@ os.chdir(os.path.dirname(path_of_file))
 thr_param = 0.3 # threshold for YOLO detection
 conf_param = 0.5 # confidence for YOLO detection
 number_of_frames = 100 # number of image frames to work with in each folder (dataset)
-
+filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
+len_on_filter = 2 # minimum length of the data list to apply filter on it
 
 data_dir = "Dataset/" 	#dataset directory
 dataset_path = glob.glob(data_dir+"*/") 		#reading all sub-directories in folder
@@ -218,21 +219,23 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			time_frame.append(i)
 
 		# Used condition on length of the list in order not tu use filter with very small amount of data.
-		if len(x_pos) > 2:
-			window_size, polyorder = check_odd_filter(len(x_pos))
-			x_pos = savgol_filter(x_pos, window_size, polyorder)
-		if len(y_pos) > 2:
-			window_size, polyorder = check_odd_filter(len(y_pos))
-			y_pos = savgol_filter(y_pos, window_size, polyorder)
-		if len(angle) > 2:
-			window_size, polyorder = check_odd_filter(len(angle))
-			angle = savgol_filter(angle, window_size, polyorder)
-		if len(velocity) > 2:
-			window_size, polyorder = check_odd_filter(len(velocity))
-			velocity = savgol_filter(velocity, window_size, polyorder)
-		if len(acceleration) > 2:
-			window_size, polyorder = check_odd_filter(len(acceleration))
-			acceleration = savgol_filter(acceleration, window_size, polyorder)
+
+		if filter_flag:
+			if len(x_pos) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(x_pos))
+				x_pos = savgol_filter(x_pos, window_size, polyorder)
+			if len(y_pos) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(y_pos))
+				y_pos = savgol_filter(y_pos, window_size, polyorder)
+			if len(angle) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(angle))
+				angle = savgol_filter(angle, window_size, polyorder)
+			if len(velocity) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(velocity))
+				velocity = savgol_filter(velocity, window_size, polyorder)
+			if len(acceleration) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(acceleration))
+				acceleration = savgol_filter(acceleration, window_size, polyorder)
 
 		cars_plot_data[label]['x'] = x_pos
 		cars_plot_data[label]['y'] = y_pos
@@ -265,7 +268,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	ax.set_zlabel('frames')
 	ax.set_title('cars trajectories')
 	plt.savefig('figures/'+img_dir+'_y_x_t.png')
-	# plt.show()
+	plt.show()
 
 	plt.figure(figsize=(10,8))
 	plt.subplots_adjust(wspace=0.5)
