@@ -10,12 +10,40 @@ import os
 import matplotlib.pyplot as plt
 import glob
 from vehicle_tracking import * # functions for tracking
+from scipy.signal import savgol_filter
+from mpl_toolkits.mplot3d import Axes3D
+
+def check_odd_filter(x):
+	# It's function used for window and poly order calculation
+	# for moving averaginf filter
+
+	# x is the size of the window
+	# y is the poly order. Should be less than x
+
+	coeff = 1
+	x = x// coeff # window size = (size of data)/coefficient
+	if x <= 2: 
+		x = 3
+	if x % 2 == 0:
+		x = x - 1
+	if x <= 3:
+		if x <=2:
+			y = 1
+		else:	
+			y = 2
+	else:
+		y = 3		
+	return (x, y)	
+
 
 path_of_file = os.path.abspath(__file__)
 os.chdir(os.path.dirname(path_of_file))
 
-thr_param = 0.3
-conf_param = 0.5
+thr_param = 0.3 # threshold for YOLO detection
+conf_param = 0.5 # confidence for YOLO detection
+number_of_frames = 100 # number of image frames to work with in each folder (dataset)
+filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
+len_on_filter = 2 # minimum length of the data list to apply filter on it
 
 data_dir = "Dataset/" 	#dataset directory
 dataset_path = glob.glob(data_dir+"*/") 		#reading all sub-directories in folder
@@ -38,7 +66,7 @@ configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
 print("[INFO] loading YOLO from disk...")
 net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
 
-for path in dataset_path:
+for path in dataset_path: # Loop through folders with different video frames (situations on the road)
 	split_path = path.split('/')
 	folders = glob.glob(path)
 	print('Processing folder',folders[0], '...')
@@ -50,7 +78,7 @@ for path in dataset_path:
 
 	files = []
 	#for q in range(frame_counter):
-	for q in range(100):
+	for q in range(number_of_frames): # Loop through certain number of video frames in the folder
 		path = folders[0]+'/'+str(q)+'.jpg'
 		files.append(path)
 
@@ -77,15 +105,10 @@ for path in dataset_path:
 			# construct a blob from the input image and then perform a forward
 			# pass of the YOLO object detector, giving us our bounding boxes and
 			# associated probabilities
-			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (96, 96),
+			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 256), # (96, 96) \ (192, 192) \ (256, 256)
 				swapRB=True, crop=False)
 			net.setInput(blob)
-			start = time.time()
 			layerOutputs = net.forward(ln)
-			end = time.time()
-
-			# show timing information on YOLO
-			print("[INFO] YOLO took {:.6f} seconds".format(end - start))
 
 			# initialize our lists of detected bounding boxes, confidences, and
 			# class IDs, respectively
@@ -170,8 +193,8 @@ for path in dataset_path:
 			print('ClassIDs:',classIDs)
 
 	#cv2.waitKey(0)
-	print(cars_dict)
-	print(list(cars_dict))
+	# print(cars_dict)
+	# print(list(cars_dict))
 
 	#saving output image in folder output/
 	cv2.imwrite('output/'+img_dir+'_final_frame.png', image)
@@ -195,6 +218,25 @@ for path in dataset_path:
 			angle.append(np.arccos(direction[i][0][0]))
 			time_frame.append(i)
 
+		# Used condition on length of the list in order not tu use filter with very small amount of data.
+
+		if filter_flag:
+			if len(x_pos) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(x_pos))
+				x_pos = savgol_filter(x_pos, window_size, polyorder)
+			if len(y_pos) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(y_pos))
+				y_pos = savgol_filter(y_pos, window_size, polyorder)
+			if len(angle) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(angle))
+				angle = savgol_filter(angle, window_size, polyorder)
+			if len(velocity) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(velocity))
+				velocity = savgol_filter(velocity, window_size, polyorder)
+			if len(acceleration) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(acceleration))
+				acceleration = savgol_filter(acceleration, window_size, polyorder)
+
 		cars_plot_data[label]['x'] = x_pos
 		cars_plot_data[label]['y'] = y_pos
 		cars_plot_data[label]['time'] = time_frame
@@ -215,7 +257,18 @@ for path in dataset_path:
 	plt.title('cars trajectories')
 	plt.savefig('figures/'+img_dir+'_trajectory.png')
 
-
+	plt.figure(figsize=(10,8))
+	ax = plt.axes(projection='3d')
+	for label in cars_labels: 
+		# Data for a three-dimensional line
+		ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'])
+	ax.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	ax.set_xlabel('x')
+	ax.set_ylabel('y')
+	ax.set_zlabel('frames')
+	ax.set_title('cars trajectories')
+	plt.savefig('figures/'+img_dir+'_y_x_t.png')
+	plt.show()
 
 	plt.figure(figsize=(10,8))
 	plt.subplots_adjust(wspace=0.5)
