@@ -13,7 +13,14 @@ from vehicle_tracking import * # functions for tracking
 from scipy.signal import savgol_filter
 
 def check_odd_filter(x):
-	x = x
+	# It's function used for window and poly order calculation
+	# for moving averaginf filter
+
+	# x is the size of the window
+	# y is the poly order. Should be less than x
+
+	coeff = 1
+	x = x// coeff # window size = (size of data)/coefficient
 	if x <= 2: 
 		x = 3
 	if x % 2 == 0:
