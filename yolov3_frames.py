@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import glob
 from vehicle_tracking import * # functions for tracking
 from scipy.signal import savgol_filter
+from mpl_toolkits.mplot3d import Axes3D
 
 def check_odd_filter(x):
 	# It's function used for window and poly order calculation
@@ -33,13 +34,15 @@ def check_odd_filter(x):
 	else:
 		y = 3		
 	return (x, y)	
-	
-		
+
+
 path_of_file = os.path.abspath(__file__)
 os.chdir(os.path.dirname(path_of_file))
 
-thr_param = 0.3
-conf_param = 0.5
+thr_param = 0.3 # threshold for YOLO detection
+conf_param = 0.5 # confidence for YOLO detection
+number_of_frames = 100 # number of image frames to work with in each folder (dataset)
+
 
 data_dir = "Dataset/" 	#dataset directory
 dataset_path = glob.glob(data_dir+"*/") 		#reading all sub-directories in folder
@@ -62,7 +65,7 @@ configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
 print("[INFO] loading YOLO from disk...")
 net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
 
-for path in dataset_path:
+for path in dataset_path: # Loop through folders with different video frames (situations on the road)
 	split_path = path.split('/')
 	folders = glob.glob(path)
 	print('Processing folder',folders[0], '...')
@@ -74,7 +77,7 @@ for path in dataset_path:
 
 	files = []
 	#for q in range(frame_counter):
-	for q in range(100):
+	for q in range(number_of_frames): # Loop through certain number of video frames in the folder
 		path = folders[0]+'/'+str(q)+'.jpg'
 		files.append(path)
 
@@ -104,12 +107,7 @@ for path in dataset_path:
 			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 256), # (96, 96) \ (192, 192) \ (256, 256)
 				swapRB=True, crop=False)
 			net.setInput(blob)
-			start = time.time()
 			layerOutputs = net.forward(ln)
-			end = time.time()
-
-			# show timing information on YOLO
-			print("[INFO] YOLO took {:.6f} seconds".format(end - start))
 
 			# initialize our lists of detected bounding boxes, confidences, and
 			# class IDs, respectively
@@ -194,8 +192,8 @@ for path in dataset_path:
 			print('ClassIDs:',classIDs)
 
 	#cv2.waitKey(0)
-	print(cars_dict)
-	print(list(cars_dict))
+	# print(cars_dict)
+	# print(list(cars_dict))
 
 	#saving output image in folder output/
 	cv2.imwrite('output/'+img_dir+'_final_frame.png', image)
@@ -256,7 +254,18 @@ for path in dataset_path:
 	plt.title('cars trajectories')
 	plt.savefig('figures/'+img_dir+'_trajectory.png')
 
-
+	plt.figure(figsize=(10,8))
+	ax = plt.axes(projection='3d')
+	for label in cars_labels: 
+		# Data for a three-dimensional line
+		ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'])
+	ax.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	ax.set_xlabel('x')
+	ax.set_ylabel('y')
+	ax.set_zlabel('frames')
+	ax.set_title('cars trajectories')
+	plt.savefig('figures/'+img_dir+'_y_x_t.png')
+	# plt.show()
 
 	plt.figure(figsize=(10,8))
 	plt.subplots_adjust(wspace=0.5)

@@ -20,7 +20,7 @@ def get_closest_center(old_center, new_centers):
   for i in new_centers: 
     motion_vector = np.subtract(i,old_center)                       #to get position difference
     distance = np.sqrt(motion_vector[0]**2 + motion_vector[1]**2)   # distance between car center and new center
-    motion_vector = np.divide(motion_vector,distance+0.000000001)    #normalizing motion ventor for later use for path angels
+    motion_vector = np.divide(motion_vector,distance+0.000000001)    #normalizing motion ventor for later use for path angles
     centers_distance[0].append([motion_vector])                     
     centers_distance[1].append(distance)                            
   
@@ -58,17 +58,18 @@ def BuildAndUpdate(boxes, cars_dict):
     for i in range(len(centers)):   #takes each center and assign label as a separate car
       car_info = [[]for i in range(4)]
       label = str(i+1)                  #label is only a number 
-      car_info[0].append(centers[i])    
-      car_info[1].append([[0,0]])
-      car_info[2].append(0)
-      car_info[3].append(0)
+      car_info[0].append(centers[i])    # position 
+      car_info[1].append([[0,0]]) # position vector 
+      car_info[2].append(0) # velocity
+      car_info[3].append(0) # acceleration
       cars_dict[label]= car_info
   else:
     cars_labels = list(cars_dict)         #getting list of all labels
     for i in cars_labels:
       if len(centers)>0:
-        locations = cars_dict[i][0]
-        old_center = locations[len(locations)-1]        #taking position of car in previos frame
+        locations = cars_dict[i][0] # (x,y) - coordinates of the centroid
+        
+        old_center = locations[len(locations)-1]        #taking position of car in previous frame
         
         #getting the closest point in current frame to this position
         closest_center, vector, distance, idx = get_closest_center(old_center,centers)  
