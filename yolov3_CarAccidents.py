@@ -43,30 +43,30 @@ def draw_box_rectangle(frame, box, color, id):
 track_dictionary = {} # dict for saving info about cars being tracked
 # key: id. value: x, y, w, h, centerx, centery, color
 # where:
-## id - id of the human
-## x - x coordinate on the frame of the left upper angle of the human rectangle
-## y - y coordinate on the frame of the left upper angle of the human rectangle
+## id - id of the car
+## x - x coordinate on the frame of the left upper angle of the car rectangle
+## y - y coordinate on the frame of the left upper angle of the car rectangle
 ## (centerx, centery) - coordinates of the rectangle's center.
 ## color - color of the rectangle. (r,g,b)
 
 def track_cars(image, boxes, track_dictionary):
 	# function that starts every new frame shows
-	# input: boxes of detected by YOLO people and dictionary that saves info about people that have been tracked already
+	# input: boxes of detected by YOLO cars and dictionary that saves info about cars that have been tracked already
 	# box = (x, y, w, h, centerx, centery, color)
-	# output: ids of people to show in this frame and updated dictionary of tracked people if there were new people.
+	# output: ids of cars to show in this frame and updated dictionary of tracked cars if there were new cars.
 
-	idx_in_this_frame = [] #This list saves human detected on this frame in order to show them later on this frame
+	idx_in_this_frame = [] #This list saves car detected on this frame in order to show them later on this frame
 	if track_dictionary == {}:
-		# is dictionary is free, than that's probably the first frame and there weren't any people that were tracked earlier 
+		# is dictionary is free, than that's probably the first frame and there weren't any cars that were tracked earlier 
 		for box in boxes:
 			track_dictionary[boxes.index(box)] = box
 			idx_in_this_frame.append(boxes.index(box))	
 			save_car(image, int(boxes.index(box)), box)
 	else:
 		for box in boxes:
-			# try to find people that were seen in the previous frames in order to set the same id for them.
+			# try to find cars that were seen in the previous frames in order to set the same id for them.
 
-			min_dist = 5000 # ratio in order to compare people from dictionary with people in the boxes.
+			min_dist = 5000 # ratio in order to compare cars from dictionary with cars in the boxes.
 			for key, value in track_dictionary.copy().items():
 				dist = calc_dist(box[4:6], track_dictionary[key][4:6])
 				if dist <= min_dist:
@@ -78,7 +78,7 @@ def track_cars(image, boxes, track_dictionary):
 				boxes.remove(box)
 				idx_in_this_frame.append(idx)
 			else:
-				# new human
+				# new car
 				k = len(track_dictionary)
 				idx_in_this_frame.append(k)
 				save_car(image, int(k), box)	
