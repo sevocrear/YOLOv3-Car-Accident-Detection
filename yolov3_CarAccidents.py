@@ -128,7 +128,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 					# filter out weak predictions by ensuring the detected
 					# probability is greater than the minimum probability
-					if confidence > conf_param and (classID == 0 or classID == 2):
+					if confidence > conf_param and (classID == 2):
 						# scale the bounding box coordinates back relative to the
 						# size of the image, keeping in mind that YOLO actually
 						# returns the center (x, y)-coordinates of the bounding
@@ -170,9 +170,9 @@ for path in dataset_path: # Loop through folders with different video frames (si
 					# draw a bounding box rectangle and label on the image
 					color = [int(c) for c in COLORS[classIDs[i]]]
 					cv2.rectangle(image, (x, y), (x + w, y + h), color, 1)
-					text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
-					cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-						0.5, color, 1)
+					# text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
+					# cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
+					# 	0.5, color, 1)
 				
 				for car_label in cars_labels:
 					car_path = cars_dict[car_label][0]
