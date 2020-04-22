@@ -20,7 +20,7 @@ def check_odd_filter(x):
 	# x is the size of the window
 	# y is the poly order. Should be less than x
 
-	coeff = 2
+	coeff = 1.5
 	x = x// coeff # window size = (size of data)/coefficient
 	if x <= 2: 
 		x = 3
@@ -168,20 +168,6 @@ for path in dataset_path: # Loop through folders with different video frames (si
 				# building cars data
 				cars_dict = BuildAndUpdate(new_boxes, cars_dict)
 				cars_labels = list(cars_dict)
-				# if len(idxs) > 0:
-				# 	# loop over the indexes we are keeping
-				# 	for i in idxs.flatten():
-				# 		# extract the bounding box coordinates
-				# 		(x, y) = (boxes[i][0], boxes[i][1])
-				# 		(w, h) = (boxes[i][2], boxes[i][3])
-
-				# 		# draw a bounding box rectangle and label on the frame
-				# 		color = [int(c) for c in COLORS[classIDs[i]]]
-				# 		cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
-				# 		text = "{}: {:.4f}".format(LABELS[classIDs[i]],
-				# 								confidences[i])
-				# 		cv2.putText(image, text, (x, y - 5),
-				# 					cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
 				for car_label in cars_labels:
 					car_path = cars_dict[car_label][0]
@@ -189,7 +175,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 					if len(car_path)> 1:
 						car_path = np.asarray(car_path,dtype=np.int32)
 						car_path = car_path.reshape((-1,1,2))
-						cv2.polylines(image,car_path,True, cars_dict[car_label][4],1)
+						cv2.polylines(image,car_path,True, cars_dict[car_label][4],3)
 						label_location = car_path[len(car_path)-1][0]
 						cv2.putText(image, car_label, (label_location[0]+5, label_location[1]+5), cv2.FONT_HERSHEY_SIMPLEX,
 						0.5, cars_dict[car_label][4], 2)
