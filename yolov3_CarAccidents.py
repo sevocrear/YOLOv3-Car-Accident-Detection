@@ -53,11 +53,6 @@ print('Sub-directories',dataset_path)
 labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
 
-# initialize a list of colors to represent each possible class label
-np.random.seed(42)
-COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
-	dtype="uint8")
-
 # derive the paths to the YOLO weights and model configuration
 weightsPath = os.path.sep.join(['yolo-coco/weights', "yolov3.weights"])
 configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
@@ -105,7 +100,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			# construct a blob from the input image and then perform a forward
 			# pass of the YOLO object detector, giving us our bounding boxes and
 			# associated probabilities
-			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 256), # (96, 96) \ (192, 192) \ (256, 256)
+			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 192), # (96, 96) \ (192, 192) \ (256, 256) \ (384, 384)
 				swapRB=True, crop=False)
 			net.setInput(blob)
 			layerOutputs = net.forward(ln)
@@ -181,6 +176,11 @@ for path in dataset_path: # Loop through folders with different video frames (si
 						cv2.putText(image, car_label, (label_location[0]+5, label_location[1]+5), cv2.FONT_HERSHEY_SIMPLEX,
 						0.5, cars_dict[car_label][4], 2)
 						cv2.circle(image, (label_location[0], label_location[1]), 4, cars_dict[car_label][4],2)
+						x = label_location[0]-cars_dict[car_label][5][0]//2
+						y = label_location[1]-cars_dict[car_label][5][1]//2
+						w = cars_dict[car_label][5][0]
+						h = cars_dict[car_label][5][1]
+						cv2.rectangle(image, (x, y), (x+w, y+h),cars_dict[car_label][4], 2)
 						
 			time_end = time.time()
 			print('FPS = ', 1/ (time_end - time_start))
