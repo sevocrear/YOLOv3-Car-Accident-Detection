@@ -260,8 +260,8 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
 			pass
 		else:	
-			ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'])
-	ax.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+			ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'], label = label)
+	ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	ax.set_xlabel('x')
 	ax.set_ylabel('y')
 	ax.set_zlabel('frames')
@@ -277,7 +277,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			pass
 		else:	
 			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['angle'])
-	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
 	plt.ylabel('angle (rad)')
 	plt.title('cars angles')
@@ -288,9 +288,9 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
 			pass
 		else:	
-			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['velocity'])
+			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['velocity'], label = label)
 		
-	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
 	plt.ylabel('velocity (pixel/frame)')
 	plt.title('cars velocities')
@@ -301,8 +301,8 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
 			pass
 		else:	
-			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['acceleration'])
-	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['acceleration'], label = label)
+	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
 	plt.ylabel(r'acceleration (pixel/${frame}^2$)')
 	plt.title('cars accelerations')
