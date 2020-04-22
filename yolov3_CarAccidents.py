@@ -9,83 +9,9 @@ import cv2
 import os
 import matplotlib.pyplot as plt
 import glob
+from vehicle_tracking import * # functions for tracking
 from scipy.signal import savgol_filter
 from mpl_toolkits.mplot3d import Axes3D
-
-
-def calc_dist(coord_new_frame, coord_prev_frame):
-	# The function that calculates the eucledean distance 
-	# between two points (x_new, y_new) and (x_prev, y_prev)
-	# It returns the float number
-	coord_subtract = np.subtract(coord_new_frame, coord_prev_frame)
-	dist = np.sqrt(coord_subtract[0]**2+coord_subtract[1]**2)
-	return int(dist)
-
-def draw_box_rectangle(frame, box, color, id):
-	# The function just draws rectangle by given coordinates of the box
-	# on the certain frame.
-	# Also, it gives rectangle certain color and ID (text)
-
-	# extract the bounding box coordinates
-	# box = (x, y, w, h, centerx, centery)
-	(x, y) = (box[0], box[1])
-	(w, h) = (box[2], box[3])
-
-	# draw a bounding box rectangle and label on the frame
-	cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
-	text = "{}: {:d}".format('Car #',
-		int(id))
-	cv2.circle(frame, (box[4], box[5]), 5, color,2)
-	cv2.putText(frame, text, (x, y - 5),
-		cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-	return frame
-
-track_dictionary = {} # dict for saving info about cars being tracked
-# key: id. value: x, y, w, h, centerx, centery, color
-# where:
-## id - id of the car
-## x - x coordinate on the frame of the left upper angle of the car rectangle
-## y - y coordinate on the frame of the left upper angle of the car rectangle
-## (centerx, centery) - coordinates of the rectangle's center.
-## color - color of the rectangle. (r,g,b)
-
-def track_cars(image, boxes, track_dictionary):
-	# function that starts every new frame shows
-	# input: boxes of detected by YOLO cars and dictionary that saves info about cars that have been tracked already
-	# box = (x, y, w, h, centerx, centery, color)
-	# output: ids of cars to show in this frame and updated dictionary of tracked cars if there were new cars.
-
-	idx_in_this_frame = [] #This list saves car detected on this frame in order to show them later on this frame
-	if track_dictionary == {}:
-		# is dictionary is free, than that's probably the first frame and there weren't any cars that were tracked earlier 
-		for box in boxes:
-			track_dictionary[boxes.index(box)] = box
-			idx_in_this_frame.append(boxes.index(box))	
-			save_car(image, int(boxes.index(box)), box)
-	else:
-		for box in boxes:
-			# try to find cars that were seen in the previous frames in order to set the same id for them.
-
-			min_dist = 5000 # ratio in order to compare cars from dictionary with cars in the boxes.
-			for key, value in track_dictionary.copy().items():
-				dist = calc_dist(box[4:6], track_dictionary[key][4:6])
-				if dist <= min_dist:
-					min_dist = dist
-					idx = key
-
-			if min_dist <= min(track_dictionary[idx][2:4]):
-				track_dictionary[idx][0:6] = box[0:6]	 
-				boxes.remove(box)
-				idx_in_this_frame.append(idx)
-			else:
-				# new car
-				k = len(track_dictionary)
-				idx_in_this_frame.append(k)
-				save_car(image, int(k), box)	
-				track_dictionary[k] = box
-				boxes.remove(box)	
-	return track_dictionary, idx_in_this_frame	
-
 
 def check_odd_filter(x):
 	# It's function used for window and poly order calculation
@@ -94,7 +20,7 @@ def check_odd_filter(x):
 	# x is the size of the window
 	# y is the poly order. Should be less than x
 
-	coeff = 1
+	coeff = 2
 	x = x// coeff # window size = (size of data)/coefficient
 	if x <= 2: 
 		x = 3
@@ -109,24 +35,13 @@ def check_odd_filter(x):
 		y = 3		
 	return (x, y)	
 
-def save_car(frame, label, box):
-  (x, y) = (box[0], box[1])
-  (w, h) = (box[2], box[3])
-  # draw a bounding box rectangle and label on the image
-  color = (255,255,0)
-  cv2.rectangle(frame, (x, y), (x + w, y + h), color, 1)
-  text = "{}: {:d}".format('label', int(label))
-  cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-  #saving output image in folder cars/
-  cv2.imwrite('cars/label_'+str(label)+'.png', frame)  
-  pass
 
 path_of_file = os.path.abspath(__file__)
 os.chdir(os.path.dirname(path_of_file))
 
 thr_param = 0.3 # threshold for YOLO detection
 conf_param = 0.5 # confidence for YOLO detection
-number_of_frames = 100 # number of image frames to work with in each folder (dataset)
+number_of_frames = 180 # number of image frames to work with in each folder (dataset)
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
 len_on_filter = 2 # minimum length of the data list to apply filter on it
 
@@ -177,7 +92,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		counter +=1
 
 		if type(image) is np.ndarray:	
-
+			time_start = time.time()
 
 			# load our input image and grab its spatial dimensions
 			#image = cv2.imread(img)
@@ -190,17 +105,17 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			# construct a blob from the input image and then perform a forward
 			# pass of the YOLO object detector, giving us our bounding boxes and
 			# associated probabilities
-			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (384, 384), # (96, 96) \ (192, 192) \ (256, 256)
+			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 256), # (96, 96) \ (192, 192) \ (256, 256)
 				swapRB=True, crop=False)
 			net.setInput(blob)
 			layerOutputs = net.forward(ln)
 
-			# initialize our lists of detected bounding boxes, confidences,
-			# and class IDs, respectively
+			# initialize our lists of detected bounding boxes, confidences, and
+			# class IDs, respectively
 			boxes = []
 			confidences = []
 			classIDs = []
-			centers = []
+
 			# loop over each of the layer outputs
 			for output in layerOutputs:
 				# loop over each of the detections
@@ -213,7 +128,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 					# filter out weak predictions by ensuring the detected
 					# probability is greater than the minimum probability
-					if (confidence > conf_param) and ((classID == 2) or (classID == 3) or (classID == 5) or (classID == 7)):
+					if confidence > conf_param and (classID == 2):
 						# scale the bounding box coordinates back relative to the
 						# size of the image, keeping in mind that YOLO actually
 						# returns the center (x, y)-coordinates of the bounding
@@ -228,8 +143,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 						# update our list of bounding box coordinates, confidences,
 						# and class IDs
-						boxes.append([x, y, int(width), int(height), centerX, centerY])
-
+						boxes.append([x, y, int(width), int(height)])
 						confidences.append(float(confidence))
 						classIDs.append(classID)
 
@@ -242,132 +156,139 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			if len(idxs) > 0:
 				# loop over the indexes we are keeping
 				# building a list or centers we're keeping
-				boxes_tracked = []
+				new_boxes = []
 				for i in idxs.flatten():
 					r = np.random.choice(255)
 					g = np.random.choice(255)
 					b = np.random.choice(255)
 					color = (r,g,b)
 					boxes[i].append(color)
-					boxes_tracked.append(boxes[i])
-
-				track_dictionary, idx_in_this_frame = track_cars(image, boxes_tracked, track_dictionary)
-
-				for key in idx_in_this_frame:
-					image = draw_box_rectangle(image, track_dictionary[key][0:6], track_dictionary[key][6], key)
-
-			image = cv2.resize(image,(W,H))
+					new_boxes.append(boxes[i]) 
+					
+					
+				# building cars data
+				cars_dict = BuildAndUpdate(new_boxes, cars_dict)
+				cars_labels = list(cars_dict)
+				
+				for car_label in cars_labels:
+					car_path = cars_dict[car_label][0]
+					# plotting car path on image and printing car label
+					if len(car_path)> 1:
+						car_path = np.asarray(car_path,dtype=np.int32)
+						car_path = car_path.reshape((-1,1,2))
+						cv2.polylines(image,car_path,True, cars_dict[car_label][4],1)
+						label_location = car_path[len(car_path)-1][0]
+						cv2.putText(image, car_label, (label_location[0]+5, label_location[1]+5), cv2.FONT_HERSHEY_SIMPLEX,
+						0.5, cars_dict[car_label][4], 2)
+						cv2.circle(image, (label_location[0], label_location[1]), 4, cars_dict[car_label][4],2)
+						
+			time_end = time.time()
+			print('FPS = ', 1/ (time_end - time_start))
+			# show the output image
 			cv2.imshow("Image", image)
-			if cv2.waitKey(1) == 27: # if esc button clicked, then exit loop
+			if cv2.waitKey(1) == 27:
 				break
-	#cv2.waitKey(0)
-	# print(cars_dict)
-	# print(list(cars_dict))
 
 	#saving output image in folder output/
 	cv2.imwrite('output/'+img_dir+'_final_frame.png', image)
 
-	# #building dictionary of plot data
-	# cars_plot_data = {}
-	# for label in cars_labels: 
-	# 	position  = cars_dict[label][0]
-	# 	direction = cars_dict[label][1]
-	# 	velocity = cars_dict[label][2]
-	# 	acceleration = cars_dict[label][3]
+	#building dictionary of plot data
+	cars_plot_data = {}
+	for label in cars_labels: 
+		position  = cars_dict[label][0]
+		direction = cars_dict[label][1]
+		velocity = cars_dict[label][2]
+		acceleration = cars_dict[label][3]
 		
-	# 	x_pos = []
-	# 	y_pos = []
-	# 	angle = []
-	# 	time_frame = []
-	# 	cars_plot_data[label]={}
-	# 	for i in range(len(position)):
-	# 		x_pos.append(position[i][0])
-	# 		y_pos.append(position[i][1])
-	# 		angle.append(np.arccos(direction[i][0][0]))
-	# 		time_frame.append(i)
+		x_pos = []
+		y_pos = []
+		angle = []
+		time_frame = []
+		cars_plot_data[label]={}
+		for i in range(len(position)):
+			x_pos.append(position[i][0])
+			y_pos.append(position[i][1])
+			angle.append(np.arccos(direction[i][0][0]))
+			time_frame.append(i)
 
-	# 	# Used condition on length of the list in order not tu use filter with very small amount of data.
+		# Used condition on length of the list in order not tu use filter with very small amount of data.
 
-	# 	if filter_flag:
-	# 		if len(x_pos) > len_on_filter:
-	# 			window_size, polyorder = check_odd_filter(len(x_pos))
-	# 			x_pos = savgol_filter(x_pos, window_size, polyorder)
-	# 		if len(y_pos) > len_on_filter:
-	# 			window_size, polyorder = check_odd_filter(len(y_pos))
-	# 			y_pos = savgol_filter(y_pos, window_size, polyorder)
-	# 		if len(angle) > len_on_filter:
-	# 			window_size, polyorder = check_odd_filter(len(angle))
-	# 			angle = savgol_filter(angle, window_size, polyorder)
-	# 		if len(velocity) > len_on_filter:
-	# 			window_size, polyorder = check_odd_filter(len(velocity))
-	# 			velocity = savgol_filter(velocity, window_size, polyorder)
-	# 		if len(acceleration) > len_on_filter:
-	# 			window_size, polyorder = check_odd_filter(len(acceleration))
-	# 			acceleration = savgol_filter(acceleration, window_size, polyorder)
+		if filter_flag:
+			if len(x_pos) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(x_pos))
+				x_pos = savgol_filter(x_pos, window_size, polyorder)
+			if len(y_pos) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(y_pos))
+				y_pos = savgol_filter(y_pos, window_size, polyorder)
+			if len(angle) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(angle))
+				angle = savgol_filter(angle, window_size, polyorder)
+			if len(velocity) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(velocity))
+				velocity = savgol_filter(velocity, window_size, polyorder)
+			if len(acceleration) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(acceleration))
+				acceleration = savgol_filter(acceleration, window_size, polyorder)
 
-	# 	cars_plot_data[label]['x'] = x_pos
-	# 	cars_plot_data[label]['y'] = y_pos
-	# 	cars_plot_data[label]['time'] = time_frame
-	# 	cars_plot_data[label]['angle'] = angle
-	# 	cars_plot_data[label]['velocity'] = velocity
-	# 	cars_plot_data[label]['acceleration'] = acceleration
+		cars_plot_data[label]['x'] = x_pos
+		cars_plot_data[label]['y'] = y_pos
+		cars_plot_data[label]['time'] = time_frame
+		cars_plot_data[label]['angle'] = angle
+		cars_plot_data[label]['velocity'] = velocity
+		cars_plot_data[label]['acceleration'] = acceleration
 
-	# #plotting and saving cars information from each video
-	# #plots can be found in folder "figures/"
-
-	# # plt.figure(figsize=(10,8))
-	# # for label in cars_labels: 
-	# # 	plt.plot(cars_plot_data[label]['x'],cars_plot_data[label]['y'])
-	# # plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
-	# # plt.xlabel('position x')
-	# # plt.ylabel('position y')
-	# # plt.xlim((0,image.shape[0]))
-	# # plt.ylim((0,image.shape[1]))
-	# # plt.title('cars trajectories')
-	# # plt.savefig('figures/'+img_dir+'_trajectory.png')
-
+	#plotting and saving cars information from each video
+	#plots can be found in folder "figures/"
 	# plt.figure(figsize=(10,8))
-	# ax = plt.axes(projection='3d')
 	# for label in cars_labels: 
-	# 	# Data for a three-dimensional line
-	# 	ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'])
-	# ax.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
-	# ax.set_xlabel('x')
-	# ax.set_ylabel('y')
-	# ax.set_zlabel('frames')
-	# ax.set_title('cars trajectories')
-	# plt.savefig('figures/'+img_dir+'_y_x_t.png')
-	# plt.show()
-
-	# plt.figure(figsize=(10,8))
-	# plt.subplots_adjust(wspace=0.5)
-	# plt.subplot(221)
-	# for label in cars_labels: 
-	# 	plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['angle'])
+	# 	plt.plot(cars_plot_data[label]['x'],cars_plot_data[label]['y'])
 	# plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
-	# plt.xlabel('frame')
-	# plt.ylabel('angle (rad)')
-	# plt.title('cars angles')
+	# plt.xlabel('position x')
+	# plt.ylabel('position y')
+	# plt.xlim((0,image.shape[0]))
+	# plt.ylim((0,image.shape[1]))
+	# plt.title('cars trajectories')
+	# plt.savefig('figures/'+img_dir+'_trajectory.png')
+
+	plt.figure(figsize=(10,8))
+	ax = plt.axes(projection='3d')
+	for label in cars_labels: 
+		# Data for a three-dimensional line
+		ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'])
+	ax.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	ax.set_xlabel('x')
+	ax.set_ylabel('y')
+	ax.set_zlabel('frames')
+	ax.set_title('cars trajectories')
+	plt.savefig('figures/'+img_dir+'_y_x_t.png')
+	plt.show()
+
+	plt.figure(figsize=(10,8))
+	plt.subplots_adjust(wspace=0.5)
+	plt.subplot(221)
+	for label in cars_labels: 
+		plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['angle'])
+	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	plt.xlabel('frame')
+	plt.ylabel('angle (rad)')
+	plt.title('cars angles')
 
 
-	# plt.subplot(222)
-	# for label in cars_labels: 
-	# 	plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['velocity'])
-	# plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
-	# plt.xlabel('frame')
-	# plt.ylabel('velocity (pixel/frame)')
-	# plt.title('cars velocities')
+	plt.subplot(222)
+	for label in cars_labels: 
+		plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['velocity'])
+	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	plt.xlabel('frame')
+	plt.ylabel('velocity (pixel/frame)')
+	plt.title('cars velocities')
 
 
-	# plt.subplot(223)
-	# for label in cars_labels: 
-	# 	plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['acceleration'])
-	# plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
-	# plt.xlabel('frame')
-	# plt.ylabel(r'acceleration (pixel/${frame}^2$)')
-	# plt.title('cars accelerations')
-	# plt.savefig('figures/'+img_dir+'_Info.png')
-	# #plt.show()
-
-	# #cv2.waitKey(0)
-	cv2.destroyAllWindows()
+	plt.subplot(223)
+	for label in cars_labels: 
+		plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['acceleration'])
+	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	plt.xlabel('frame')
+	plt.ylabel(r'acceleration (pixel/${frame}^2$)')
+	plt.title('cars accelerations')
+	plt.savefig('figures/'+img_dir+'_Info.png')
+	plt.show()
