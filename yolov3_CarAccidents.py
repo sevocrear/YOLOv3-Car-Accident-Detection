@@ -236,24 +236,19 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		cars_plot_data[label]['velocity'] = velocity
 		cars_plot_data[label]['acceleration'] = acceleration
 
-	#plotting and saving cars information from each video
-	#plots can be found in folder "figures/"
-	# plt.figure(figsize=(10,8))
-	# for label in cars_labels: 
-	# 	plt.plot(cars_plot_data[label]['x'],cars_plot_data[label]['y'])
-	# plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
-	# plt.xlabel('position x')
-	# plt.ylabel('position y')
-	# plt.xlim((0,image.shape[0]))
-	# plt.ylim((0,image.shape[1]))
-	# plt.title('cars trajectories')
-	# plt.savefig('figures/'+img_dir+'_trajectory.png')
-
 	plt.figure(figsize=(10,8))
 	ax = plt.axes(projection='3d')
 
 
-	T_var = 50 # threshold in order to show only those cars that is moving...
+
+	#----------------------------------------------------------------------#
+	
+
+	####						DETECTION PART 							####
+
+
+	#----------------------------------------------------------------------#
+	T_var = 50 # threshold in order to show only those cars that is moving... (50 is okay)
 
 	for label in cars_labels: 
 		# Data for a three-dimensional line
@@ -276,7 +271,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
 			pass
 		else:	
-			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['angle'])
+			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['angle'], label = label)
 	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
 	plt.ylabel('angle (rad)')
