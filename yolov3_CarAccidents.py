@@ -53,6 +53,11 @@ print('Sub-directories',dataset_path)
 labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
 
+# initialize a list of colors to represent each possible class label
+np.random.seed(42)
+COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
+                           dtype="uint8")
+
 # derive the paths to the YOLO weights and model configuration
 weightsPath = os.path.sep.join(['yolo-coco/weights', "yolov3.weights"])
 configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
@@ -90,7 +95,6 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			time_start = time.time()
 
 			# load our input image and grab its spatial dimensions
-			#image = cv2.imread(img)
 			(H, W) = image.shape[:2]
 
 			# determine only the *output* layer names that we need from YOLO
@@ -164,7 +168,21 @@ for path in dataset_path: # Loop through folders with different video frames (si
 				# building cars data
 				cars_dict = BuildAndUpdate(new_boxes, cars_dict)
 				cars_labels = list(cars_dict)
-				
+				# if len(idxs) > 0:
+				# 	# loop over the indexes we are keeping
+				# 	for i in idxs.flatten():
+				# 		# extract the bounding box coordinates
+				# 		(x, y) = (boxes[i][0], boxes[i][1])
+				# 		(w, h) = (boxes[i][2], boxes[i][3])
+
+				# 		# draw a bounding box rectangle and label on the frame
+				# 		color = [int(c) for c in COLORS[classIDs[i]]]
+				# 		cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+				# 		text = "{}: {:.4f}".format(LABELS[classIDs[i]],
+				# 								confidences[i])
+				# 		cv2.putText(image, text, (x, y - 5),
+				# 					cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
 				for car_label in cars_labels:
 					car_path = cars_dict[car_label][0]
 					# plotting car path on image and printing car label
@@ -176,10 +194,10 @@ for path in dataset_path: # Loop through folders with different video frames (si
 						cv2.putText(image, car_label, (label_location[0]+5, label_location[1]+5), cv2.FONT_HERSHEY_SIMPLEX,
 						0.5, cars_dict[car_label][4], 2)
 						cv2.circle(image, (label_location[0], label_location[1]), 4, cars_dict[car_label][4],2)
-						x = label_location[0]-cars_dict[car_label][5][0]//2
-						y = label_location[1]-cars_dict[car_label][5][1]//2
-						w = cars_dict[car_label][5][0]
-						h = cars_dict[car_label][5][1]
+						x = cars_dict[car_label][5][0]
+						y = cars_dict[car_label][5][1]
+						w = cars_dict[car_label][5][2]
+						h = cars_dict[car_label][5][3]
 						cv2.rectangle(image, (x, y), (x+w, y+h),cars_dict[car_label][4], 2)
 						
 			time_end = time.time()
