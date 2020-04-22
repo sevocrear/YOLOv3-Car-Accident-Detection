@@ -84,7 +84,6 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	for f1 in files:
 		image = cv2.imread(f1)
 		print('Processing frame:'+str(counter)+'/'+str(frame_counter),'in folder:'+folders[0]+'...')
-		counter +=1
 
 		if type(image) is np.ndarray:	
 			time_start = time.time()
@@ -180,13 +179,17 @@ for path in dataset_path: # Loop through folders with different video frames (si
 						w = cars_dict[car_label][5][2]
 						h = cars_dict[car_label][5][3]
 						cv2.rectangle(image, (x, y), (x+w, y+h),cars_dict[car_label][4], 2)
-						
+
+			cv2.putText(image, 'frame ' + str(counter), (20, image.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX,
+						3, (255,255,200), 2)			
+
 			time_end = time.time()
 			print('FPS = ', 1/ (time_end - time_start))
 			# show the output image
 			cv2.imshow("Image", image)
 			if cv2.waitKey(1) == 27:
 				break
+			counter +=1
 
 	#saving output image in folder output/
 	cv2.imwrite('output/'+img_dir+'_final_frame.png', image)
@@ -236,8 +239,6 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		cars_plot_data[label]['velocity'] = velocity
 		cars_plot_data[label]['acceleration'] = acceleration
 
-	plt.figure(figsize=(10,8))
-	ax = plt.axes(projection='3d')
 
 
 
@@ -250,6 +251,8 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	#----------------------------------------------------------------------#
 	T_var = 50 # threshold in order to show only those cars that is moving... (50 is okay)
 
+	plt.figure(figsize=(10,8))
+	ax = plt.axes(projection='3d')
 	for label in cars_labels: 
 		# Data for a three-dimensional line
 		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
@@ -274,6 +277,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['angle'], label = label)
 	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
+	plt.grid()
 	plt.ylabel('angle (rad)')
 	plt.title('cars angles')
 
@@ -287,6 +291,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		
 	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
+	plt.grid()
 	plt.ylabel('velocity (pixel/frame)')
 	plt.title('cars velocities')
 
@@ -301,5 +306,6 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	plt.xlabel('frame')
 	plt.ylabel(r'acceleration (pixel/${frame}^2$)')
 	plt.title('cars accelerations')
+	plt.grid()
 	plt.savefig('figures/'+img_dir+'_Info.png')
 	plt.show()
