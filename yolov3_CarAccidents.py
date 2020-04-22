@@ -20,7 +20,7 @@ def check_odd_filter(x):
 	# x is the size of the window
 	# y is the poly order. Should be less than x
 
-	coeff = 1
+	coeff = 2
 	x = x// coeff # window size = (size of data)/coefficient
 	if x <= 2: 
 		x = 3
@@ -41,7 +41,7 @@ os.chdir(os.path.dirname(path_of_file))
 
 thr_param = 0.3 # threshold for YOLO detection
 conf_param = 0.5 # confidence for YOLO detection
-number_of_frames = 100 # number of image frames to work with in each folder (dataset)
+number_of_frames = 180 # number of image frames to work with in each folder (dataset)
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
 len_on_filter = 2 # minimum length of the data list to apply filter on it
 
@@ -92,7 +92,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		counter +=1
 
 		if type(image) is np.ndarray:	
-
+			time_start = time.time()
 
 			# load our input image and grab its spatial dimensions
 			#image = cv2.imread(img)
@@ -158,21 +158,17 @@ for path in dataset_path: # Loop through folders with different video frames (si
 				# building a list or centers we're keeping
 				new_boxes = []
 				for i in idxs.flatten():
+					r = np.random.choice(255)
+					g = np.random.choice(255)
+					b = np.random.choice(255)
+					color = (r,g,b)
+					boxes[i].append(color)
 					new_boxes.append(boxes[i]) 
 					
 					
 				# building cars data
 				cars_dict = BuildAndUpdate(new_boxes, cars_dict)
 				cars_labels = list(cars_dict)
-				for i in idxs.flatten():
-					(x, y) = (boxes[i][0], boxes[i][1])
-					(w, h) = (boxes[i][2], boxes[i][3])
-					# draw a bounding box rectangle and label on the image
-					color = [int(c) for c in COLORS[classIDs[i]]]
-					cv2.rectangle(image, (x, y), (x + w, y + h), color, 1)
-					# text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
-					# cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-					# 	0.5, color, 1)
 				
 				for car_label in cars_labels:
 					car_path = cars_dict[car_label][0]
@@ -180,21 +176,18 @@ for path in dataset_path: # Loop through folders with different video frames (si
 					if len(car_path)> 1:
 						car_path = np.asarray(car_path,dtype=np.int32)
 						car_path = car_path.reshape((-1,1,2))
-						cv2.polylines(image,car_path,True,(0,0,255))
+						cv2.polylines(image,car_path,True, cars_dict[car_label][4],1)
 						label_location = car_path[len(car_path)-1][0]
-						cv2.putText(image, car_label, (label_location[0], label_location[1]), cv2.FONT_HERSHEY_SIMPLEX,
-						0.5, color, 1)
+						cv2.putText(image, car_label, (label_location[0]+5, label_location[1]+5), cv2.FONT_HERSHEY_SIMPLEX,
+						0.5, cars_dict[car_label][4], 2)
+						cv2.circle(image, (label_location[0], label_location[1]), 4, cars_dict[car_label][4],2)
 						
-
+			time_end = time.time()
+			print('FPS = ', 1/ (time_end - time_start))
 			# show the output image
-			#cv2.imshow("Image", image)
-			#time.sleep(2)
-			#cv2.waitKey(0)
-			print('ClassIDs:',classIDs)
-
-	#cv2.waitKey(0)
-	# print(cars_dict)
-	# print(list(cars_dict))
+			cv2.imshow("Image", image)
+			if cv2.waitKey(1) == 27:
+				break
 
 	#saving output image in folder output/
 	cv2.imwrite('output/'+img_dir+'_final_frame.png', image)
@@ -246,16 +239,16 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 	#plotting and saving cars information from each video
 	#plots can be found in folder "figures/"
-	plt.figure(figsize=(10,8))
-	for label in cars_labels: 
-		plt.plot(cars_plot_data[label]['x'],cars_plot_data[label]['y'])
-	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
-	plt.xlabel('position x')
-	plt.ylabel('position y')
-	plt.xlim((0,image.shape[0]))
-	plt.ylim((0,image.shape[1]))
-	plt.title('cars trajectories')
-	plt.savefig('figures/'+img_dir+'_trajectory.png')
+	# plt.figure(figsize=(10,8))
+	# for label in cars_labels: 
+	# 	plt.plot(cars_plot_data[label]['x'],cars_plot_data[label]['y'])
+	# plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	# plt.xlabel('position x')
+	# plt.ylabel('position y')
+	# plt.xlim((0,image.shape[0]))
+	# plt.ylim((0,image.shape[1]))
+	# plt.title('cars trajectories')
+	# plt.savefig('figures/'+img_dir+'_trajectory.png')
 
 	plt.figure(figsize=(10,8))
 	ax = plt.axes(projection='3d')
@@ -298,7 +291,4 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	plt.ylabel(r'acceleration (pixel/${frame}^2$)')
 	plt.title('cars accelerations')
 	plt.savefig('figures/'+img_dir+'_Info.png')
-	#plt.show()
-
-	#cv2.waitKey(0)
-	cv2.destroyAllWindows()
+	plt.show()

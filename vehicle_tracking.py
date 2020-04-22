@@ -56,12 +56,13 @@ def BuildAndUpdate(boxes, cars_dict):
   centers = centroid(boxes)
   if len(cars_dict)==0:             #to check if dictionary is empty 
     for i in range(len(centers)):   #takes each center and assign label as a separate car
-      car_info = [[]for i in range(4)]
+      car_info = [[]for i in range(5)]
       label = str(i+1)                  #label is only a number 
       car_info[0].append(centers[i])    # position 
       car_info[1].append([[0,0]]) # position vector 
       car_info[2].append(0) # velocity
       car_info[3].append(0) # acceleration
+      car_info[4] = (boxes[i][4]) # color of the car
       cars_dict[label]= car_info
   else:
     cars_labels = list(cars_dict)         #getting list of all labels
@@ -85,7 +86,11 @@ def BuildAndUpdate(boxes, cars_dict):
     if len(centers)> 0:         #checking if there are still not-assigned centers
       for center in centers:
         new_label = str(max(int_labels)+1)        #creating new label for new car
-        cars_dict[new_label] = [[center],[[[0,0]]],[0],[0]]
+        r = np.random.choice(255)
+        g = np.random.choice(255)
+        b = np.random.choice(255)
+        color = (r,g,b)
+        cars_dict[new_label] = [[center],[[[0,0]]],[0],[0], color]
 
         
 
