@@ -15,12 +15,12 @@ from mpl_toolkits.mplot3d import Axes3D
 
 def check_odd_filter(x):
 	# It's function used for window and poly order calculation
-	# for moving averaginf filter
+	# for moving averaging filter
 
 	# x is the size of the window
 	# y is the poly order. Should be less than x
 
-	coeff = 1.5
+	coeff = 1
 	x = x// coeff # window size = (size of data)/coefficient
 	if x <= 2: 
 		x = 3
@@ -32,7 +32,7 @@ def check_odd_filter(x):
 		else:	
 			y = 2
 	else:
-		y = 3		
+		y = 3	
 	return (x, y)	
 
 
@@ -41,6 +41,7 @@ os.chdir(os.path.dirname(path_of_file))
 
 thr_param = 0.3 # threshold for YOLO detection
 conf_param = 0.5 # confidence for YOLO detection
+frame_start_with = 100
 number_of_frames = 180 # number of image frames to work with in each folder (dataset)
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
 len_on_filter = 2 # minimum length of the data list to apply filter on it
@@ -52,11 +53,6 @@ print('Sub-directories',dataset_path)
 # load the COCO class labels our YOLO model was trained on
 labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
 LABELS = open(labelsPath).read().strip().split("\n")
-
-# initialize a list of colors to represent each possible class label
-np.random.seed(42)
-COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
-                           dtype="uint8")
 
 # derive the paths to the YOLO weights and model configuration
 weightsPath = os.path.sep.join(['yolo-coco/weights', "yolov3.weights"])
@@ -77,10 +73,14 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	print('Number of frames:',frame_counter)
 
 	files = []
+<<<<<<< HEAD
 	#for q in range(frame_counter):
 	#for q in range(10):
 	#for q in range(frame_counter):
 	for q in range(number_of_frames): # Loop through certain number of video frames in the folder
+=======
+	for q in range(frame_start_with, number_of_frames): # Loop through certain number of video frames in the folder
+>>>>>>> b737012bcc19be1a85b0cd8f980bb60b32e10688
 		path = folders[0]+'/'+str(q)+'.jpg'
 		files.append(path)
 
@@ -258,10 +258,17 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 	plt.figure(figsize=(10,8))
 	ax = plt.axes(projection='3d')
+
+
+	T_var = 50 # threshold in order to show only those cars that is moving...
+
 	for label in cars_labels: 
 		# Data for a three-dimensional line
-		ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'])
-	ax.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
+			pass
+		else:	
+			ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'], label = label)
+	ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	ax.set_xlabel('x')
 	ax.set_ylabel('y')
 	ax.set_zlabel('frames')
@@ -273,8 +280,11 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	plt.subplots_adjust(wspace=0.5)
 	plt.subplot(221)
 	for label in cars_labels: 
-		plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['angle'])
-	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
+			pass
+		else:	
+			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['angle'])
+	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
 	plt.ylabel('angle (rad)')
 	plt.title('cars angles')
@@ -282,8 +292,12 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 	plt.subplot(222)
 	for label in cars_labels: 
-		plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['velocity'])
-	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
+			pass
+		else:	
+			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['velocity'], label = label)
+		
+	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
 	plt.ylabel('velocity (pixel/frame)')
 	plt.title('cars velocities')
@@ -291,8 +305,11 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 	plt.subplot(223)
 	for label in cars_labels: 
-		plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['acceleration'])
-	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+		if np.var(np.sqrt(cars_plot_data[label]['x']**2+cars_plot_data[label]['y']**2)) <T_var:
+			pass
+		else:	
+			plt.plot(cars_plot_data[label]['time'],cars_plot_data[label]['acceleration'], label = label)
+	plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 	plt.xlabel('frame')
 	plt.ylabel(r'acceleration (pixel/${frame}^2$)')
 	plt.title('cars accelerations')
