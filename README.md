@@ -1,6 +1,6 @@
 # Implementing YOLO technique in order to detect car accidents and to Detect an invasion of private territory
 
-In this repository you could find 3 scripts in order to implement YOLOv3 algorithm on videos, images and camera.
+In this repository you could find several scripts in order to implement YOLOv3 algorithm on videos, images and camera.
 
 At first, clone the repository:
 ```bash
@@ -27,9 +27,9 @@ python3 yolov3_<aim>.py
 ```
 
 * yolov3_camera_SaFe_Territory.py - detect people and cars on the camera frames 
+* yolov3_CarAccidents.py - detect car accidents on the video frames (Dataset is given)
 * yolov3_camera.py - detect any objects on the camera frames
 * yolov3_detect.py - detect objects on the camera frames for RealSense Camera
-* yolov3_frames.py - detect car accidents on the video frames (Dataset is given)
 * yolov3_image.py - detect objects on the image (put to input)
 * yolov3_video.py - detect objects on the video frames
 

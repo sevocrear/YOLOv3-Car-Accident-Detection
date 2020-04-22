@@ -10,18 +10,63 @@ import os
 import matplotlib.pyplot as plt
 import glob
 from vehicle_tracking import * # functions for tracking
+from scipy.signal import savgol_filter
+from mpl_toolkits.mplot3d import Axes3D
+
+def check_odd_filter(x):
+	# It's function used for window and poly order calculation
+	# for moving averaginf filter
+
+	# x is the size of the window
+	# y is the poly order. Should be less than x
+
+	coeff = 1.5
+	x = x// coeff # window size = (size of data)/coefficient
+	if x <= 2: 
+		x = 3
+	if x % 2 == 0:
+		x = x - 1
+	if x <= 3:
+		if x <=2:
+			y = 1
+		else:	
+			y = 2
+	else:
+		y = 3		
+	return (x, y)	
+
 
 path_of_file = os.path.abspath(__file__)
 os.chdir(os.path.dirname(path_of_file))
 
-thr_param = 0.3
-conf_param = 0.5
+thr_param = 0.3 # threshold for YOLO detection
+conf_param = 0.5 # confidence for YOLO detection
+number_of_frames = 180 # number of image frames to work with in each folder (dataset)
+filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
+len_on_filter = 2 # minimum length of the data list to apply filter on it
 
 data_dir = "Dataset/" 	#dataset directory
 dataset_path = glob.glob(data_dir+"*/") 		#reading all sub-directories in folder
 print('Sub-directories',dataset_path)
 
-for path in dataset_path:
+# load the COCO class labels our YOLO model was trained on
+labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
+LABELS = open(labelsPath).read().strip().split("\n")
+
+# initialize a list of colors to represent each possible class label
+np.random.seed(42)
+COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
+                           dtype="uint8")
+
+# derive the paths to the YOLO weights and model configuration
+weightsPath = os.path.sep.join(['yolo-coco/weights', "yolov3.weights"])
+configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
+
+# load our YOLO object detector trained on COCO dataset (80 classes)
+print("[INFO] loading YOLO from disk...")
+net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
+
+for path in dataset_path: # Loop through folders with different video frames (situations on the road)
 	split_path = path.split('/')
 	folders = glob.glob(path)
 	print('Processing folder',folders[0], '...')
@@ -32,8 +77,10 @@ for path in dataset_path:
 	print('Number of frames:',frame_counter)
 
 	files = []
-	for q in range(frame_counter):
+	#for q in range(frame_counter):
 	#for q in range(10):
+	#for q in range(frame_counter):
+	for q in range(number_of_frames): # Loop through certain number of video frames in the folder
 		path = folders[0]+'/'+str(q)+'.jpg'
 		files.append(path)
 
@@ -47,26 +94,9 @@ for path in dataset_path:
 		counter +=1
 
 		if type(image) is np.ndarray:	
-			# load the COCO class labels our YOLO model was trained on
-			labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
-			LABELS = open(labelsPath).read().strip().split("\n")
-
-			# initialize a list of colors to represent each possible class label
-			np.random.seed(42)
-			COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
-				dtype="uint8")
-
-			# derive the paths to the YOLO weights and model configuration
-			weightsPath = os.path.sep.join(['yolo-coco/weights', "yolov3.weights"])
-			configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
-
-			# load our YOLO object detector trained on COCO dataset (80 classes)
-			print("[INFO] loading YOLO from disk...")
-			net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
-
+			time_start = time.time()
 
 			# load our input image and grab its spatial dimensions
-			#image = cv2.imread(img)
 			(H, W) = image.shape[:2]
 
 			# determine only the *output* layer names that we need from YOLO
@@ -76,15 +106,10 @@ for path in dataset_path:
 			# construct a blob from the input image and then perform a forward
 			# pass of the YOLO object detector, giving us our bounding boxes and
 			# associated probabilities
-			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (96, 96),
+			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 192), # (96, 96) \ (192, 192) \ (256, 256) \ (384, 384)
 				swapRB=True, crop=False)
 			net.setInput(blob)
-			start = time.time()
 			layerOutputs = net.forward(ln)
-			end = time.time()
-
-			# show timing information on YOLO
-			print("[INFO] YOLO took {:.6f} seconds".format(end - start))
 
 			# initialize our lists of detected bounding boxes, confidences, and
 			# class IDs, respectively
@@ -104,7 +129,7 @@ for path in dataset_path:
 
 					# filter out weak predictions by ensuring the detected
 					# probability is greater than the minimum probability
-					if confidence > conf_param and (classID == 0 or classID == 2):
+					if confidence > conf_param and (classID == 2):
 						# scale the bounding box coordinates back relative to the
 						# size of the image, keeping in mind that YOLO actually
 						# returns the center (x, y)-coordinates of the bounding
@@ -134,43 +159,41 @@ for path in dataset_path:
 				# building a list or centers we're keeping
 				new_boxes = []
 				for i in idxs.flatten():
+					r = np.random.choice(255)
+					g = np.random.choice(255)
+					b = np.random.choice(255)
+					color = (r,g,b)
+					boxes[i].append(color)
 					new_boxes.append(boxes[i]) 
 					
 					
 				# building cars data
 				cars_dict = BuildAndUpdate(new_boxes, cars_dict)
 				cars_labels = list(cars_dict)
-				for i in idxs.flatten():
-					(x, y) = (boxes[i][0], boxes[i][1])
-					(w, h) = (boxes[i][2], boxes[i][3])
-					# draw a bounding box rectangle and label on the image
-					color = [int(c) for c in COLORS[classIDs[i]]]
-					cv2.rectangle(image, (x, y), (x + w, y + h), color, 1)
-					text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
-					cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-						0.5, color, 1)
-				
+
 				for car_label in cars_labels:
 					car_path = cars_dict[car_label][0]
 					# plotting car path on image and printing car label
 					if len(car_path)> 1:
 						car_path = np.asarray(car_path,dtype=np.int32)
 						car_path = car_path.reshape((-1,1,2))
-						cv2.polylines(image,car_path,True,(0,0,255))
+						cv2.polylines(image,car_path,True, cars_dict[car_label][4],3)
 						label_location = car_path[len(car_path)-1][0]
-						cv2.putText(image, car_label, (label_location[0], label_location[1]), cv2.FONT_HERSHEY_SIMPLEX,
-						0.5, color, 1)
+						cv2.putText(image, car_label, (label_location[0]+5, label_location[1]+5), cv2.FONT_HERSHEY_SIMPLEX,
+						0.5, cars_dict[car_label][4], 2)
+						cv2.circle(image, (label_location[0], label_location[1]), 4, cars_dict[car_label][4],2)
+						x = cars_dict[car_label][5][0]
+						y = cars_dict[car_label][5][1]
+						w = cars_dict[car_label][5][2]
+						h = cars_dict[car_label][5][3]
+						cv2.rectangle(image, (x, y), (x+w, y+h),cars_dict[car_label][4], 2)
 						
-
+			time_end = time.time()
+			print('FPS = ', 1/ (time_end - time_start))
 			# show the output image
-			#cv2.imshow("Image", image)
-			#time.sleep(2)
-			#cv2.waitKey(0)
-			print('ClassIDs:',classIDs)
-
-	#cv2.waitKey(0)
-	print(cars_dict)
-	print(list(cars_dict))
+			cv2.imshow("Image", image)
+			if cv2.waitKey(1) == 27:
+				break
 
 	#saving output image in folder output/
 	cv2.imwrite('output/'+img_dir+'_final_frame.png', image)
@@ -194,6 +217,25 @@ for path in dataset_path:
 			angle.append(np.arccos(direction[i][0][0]))
 			time_frame.append(i)
 
+		# Used condition on length of the list in order not tu use filter with very small amount of data.
+
+		if filter_flag:
+			if len(x_pos) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(x_pos))
+				x_pos = savgol_filter(x_pos, window_size, polyorder)
+			if len(y_pos) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(y_pos))
+				y_pos = savgol_filter(y_pos, window_size, polyorder)
+			if len(angle) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(angle))
+				angle = savgol_filter(angle, window_size, polyorder)
+			if len(velocity) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(velocity))
+				velocity = savgol_filter(velocity, window_size, polyorder)
+			if len(acceleration) > len_on_filter:
+				window_size, polyorder = check_odd_filter(len(acceleration))
+				acceleration = savgol_filter(acceleration, window_size, polyorder)
+
 		cars_plot_data[label]['x'] = x_pos
 		cars_plot_data[label]['y'] = y_pos
 		cars_plot_data[label]['time'] = time_frame
@@ -203,18 +245,29 @@ for path in dataset_path:
 
 	#plotting and saving cars information from each video
 	#plots can be found in folder "figures/"
+	# plt.figure(figsize=(10,8))
+	# for label in cars_labels: 
+	# 	plt.plot(cars_plot_data[label]['x'],cars_plot_data[label]['y'])
+	# plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	# plt.xlabel('position x')
+	# plt.ylabel('position y')
+	# plt.xlim((0,image.shape[0]))
+	# plt.ylim((0,image.shape[1]))
+	# plt.title('cars trajectories')
+	# plt.savefig('figures/'+img_dir+'_trajectory.png')
+
 	plt.figure(figsize=(10,8))
+	ax = plt.axes(projection='3d')
 	for label in cars_labels: 
-		plt.plot(cars_plot_data[label]['x'],cars_plot_data[label]['y'])
-	plt.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
-	plt.xlabel('position x')
-	plt.ylabel('position y')
-	plt.xlim((0,image.shape[0]))
-	plt.ylim((0,image.shape[1]))
-	plt.title('cars trajectories')
-	plt.savefig('figures/'+img_dir+'_trajectory.png')
-
-
+		# Data for a three-dimensional line
+		ax.plot3D(cars_plot_data[label]['x'],cars_plot_data[label]['y'], cars_plot_data[label]['time'])
+	ax.legend(cars_labels,loc='center left', bbox_to_anchor=(1, 0.5))
+	ax.set_xlabel('x')
+	ax.set_ylabel('y')
+	ax.set_zlabel('frames')
+	ax.set_title('cars trajectories')
+	plt.savefig('figures/'+img_dir+'_y_x_t.png')
+	plt.show()
 
 	plt.figure(figsize=(10,8))
 	plt.subplots_adjust(wspace=0.5)
@@ -244,7 +297,4 @@ for path in dataset_path:
 	plt.ylabel(r'acceleration (pixel/${frame}^2$)')
 	plt.title('cars accelerations')
 	plt.savefig('figures/'+img_dir+'_Info.png')
-	#plt.show()
-
-	#cv2.waitKey(0)
-	cv2.destroyAllWindows()
+	plt.show()
