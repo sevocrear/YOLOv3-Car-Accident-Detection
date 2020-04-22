@@ -6,8 +6,8 @@ def  centroid(box):
   centroids= []
   for i in box:               
     # i = [x,y,w,h]
-    dis_x = np.int32(i[2]/2)
-    dis_y = np.int32(i[3]/2)
+    dis_x = np.int32(i[2]//2)
+    dis_y = np.int32(i[3]//2)
     centroid = [i[0]+dis_x, i[1]+dis_y]
     centroids.append(centroid)
   return centroids
@@ -32,10 +32,11 @@ def get_closest_center(old_center, new_centers):
 
 
 # function to sort new values inside the dictionary 
-def update_dict(arrays,new_center,vector,distance ): 
+def update_dict(arrays, car_bounds, new_center,vector,distance ): 
   arrays[0].append(new_center)
   arrays[1].append(vector)
   arrays[2].append(distance)
+  arrays[5] = car_bounds
   
  
   if len(arrays[2])<3:
@@ -53,16 +54,18 @@ def update_dict(arrays,new_center,vector,distance ):
 # if cars_dict is not empty, it updates values
 # this function calculates for each car path points(centers), direction vector, velocity, acceleration 
 def BuildAndUpdate(boxes, cars_dict):
+  # boxes[i] = [x, y, int(width), int(height), color]
   centers = centroid(boxes)
   if len(cars_dict)==0:             #to check if dictionary is empty 
     for i in range(len(centers)):   #takes each center and assign label as a separate car
-      car_info = [[]for i in range(5)]
+      car_info = [[]for i in range(6)]
       label = str(i+1)                  #label is only a number 
-      car_info[0].append(centers[i])    # position 
+      car_info[0].append(centers[i])    # center position 
       car_info[1].append([[0,0]]) # position vector 
       car_info[2].append(0) # velocity
       car_info[3].append(0) # acceleration
       car_info[4] = (boxes[i][4]) # color of the car
+      car_info[5] = boxes[0:4] # x,y,w,h
       cars_dict[label]= car_info
   else:
     cars_labels = list(cars_dict)         #getting list of all labels
@@ -74,11 +77,11 @@ def BuildAndUpdate(boxes, cars_dict):
         
         #getting the closest point in current frame to this position
         closest_center, vector, distance, idx = get_closest_center(old_center,centers)  
-        car_bounds = boxes[idx][2:4]
-        if distance <= min(car_bounds):       #applying threshold to closest distance to see if it's close enough
-          cars_dict[i]= update_dict(cars_dict[i],closest_center, vector, distance)      #if distance less than threshold the position of car is updated
+        car_bounds = boxes[idx][0:4]
+        if distance <= min(car_bounds[2:4]):       #applying threshold to closest distance to see if it's close enough
+          cars_dict[i]= update_dict(cars_dict[i],car_bounds, closest_center, vector, distance)      #if distance less than threshold the position of car is updated
           del centers[idx]                  #delete center from list
-    
+          del boxes[idx]
     int_labels = []
     for car_label in cars_labels:
       int_labels.append(int(car_label))
@@ -90,7 +93,7 @@ def BuildAndUpdate(boxes, cars_dict):
         g = np.random.choice(255)
         b = np.random.choice(255)
         color = (r,g,b)
-        cars_dict[new_label] = [[center],[[[0,0]]],[0],[0], color]
+        cars_dict[new_label] = [[center],[[[0,0]]],[0],[0], color, boxes[centers.index(center)][0:4]]
 
         
 
