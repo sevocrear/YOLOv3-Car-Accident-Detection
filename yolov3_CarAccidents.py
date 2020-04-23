@@ -54,6 +54,8 @@ k_overlap = 0.3 # ratio (0-1) for overlapping issue | thresh_overlap = distance_
 frame_overlapped_interval = 10 # the interval (- frame_overlapped_interval + frame; frame + frame_overlapped_interval) to analyze if there were accident or not
 
 T_acc = 1 # theshold in order to detect acceleration anomaly
+angle_threshold = 1 #threshold to detect crash angle
+trajectory_thresold = 0.1 #threshold to detect change in path direction
 
 
 
@@ -345,11 +347,25 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		checks[1] = 0.5
 
 	#----Angle Anomalies----#
+	angle_anomalies = []
+	for label in potential_cars_labels:
+		
+		angle_difference = check_angle_anomaly(cars_data[label]['angle'],frame_overlapped,frame_overlapped_interval)
+		angle_anomalies.append(angle_difference)
 
+	if len(angle_anomalies)>0:	
+		max_angle_change = max(angle_anomalies)
+		print('change in angle :', max_angle_change)
+		if max_angle_change >= trajectory_thresold:
+			checks[2] = 1
+		else:
+			checks[2] = 0.5
+	else:
+		checks[2] = 0.5
 
 	#----Checkings----#
-	print(sum(checks))
-	if (checks[0]+checks[1] + checks[2])>=1.49:
+	print('score',sum(checks))
+	if (checks[0]+checks[1] + checks[2])>=1.99:
 		image = images_saved[frame_overlapped]
 		print('accident happened at frame ',frame_overlapped,' between cars ', overlapped)
 		for car_label in potential_cars_labels:
