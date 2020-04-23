@@ -42,7 +42,7 @@ os.chdir(os.path.dirname(path_of_file))
 
 thr_param = 0.3 # threshold for YOLO detection
 conf_param = 0.5 # confidence for YOLO detection
-frame_start_with = 140
+frame_start_with = 1 # frame to start with
 frame_end_with = 170 # number of image frames to work with in each folder (dataset)
 
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
@@ -50,10 +50,10 @@ len_on_filter = 2 # minimum length of the data list to apply filter on it
 
 T_var = 200 # threshold in order to show only those cars that is moving... (50 is okay)
 
-k_overlap = 0.25 # ratio (0-1) for overlapping issue | thresh_overlap = distance_between*k_overlap
-frame_overlapped_interval = 20 # the interval (- frame_overlapped_interval + frame; frame + frame_overlapped_interval) to analyze if there were accident or not
+k_overlap = 0.3 # ratio (0-1) for overlapping issue | thresh_overlap = distance_between*k_overlap
+frame_overlapped_interval = 10 # the interval (- frame_overlapped_interval + frame; frame + frame_overlapped_interval) to analyze if there were accident or not
 
-T_acc = 1.5 # theshold in order to detect acceleration anomaly
+T_acc = 1 # theshold in order to detect acceleration anomaly
 
 
 
@@ -268,7 +268,6 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	cars_labels_to_analyze = []
 	for label in cars_labels: 
 		# Data for a three-dimensional line
-		print('np.var',np.var(np.sqrt(np.power(cars_data[label]['x'],2)+np.power(cars_data[label]['y'],2))))
 		if np.var(np.sqrt(np.power(cars_data[label]['x'],2)+np.power(cars_data[label]['y'],2))) <T_var:
 			del cars_data[label]
 		else:	
@@ -304,10 +303,10 @@ for path in dataset_path: # Loop through folders with different video frames (si
 						flag = 0	
 	if not flag:					
 		print('labels of overlapped cars:', overlapped,'. Frame of potential accident:', frame_start_with + frame_overlapped)
-		checks[0] = 1
-	else:
-		print('There weren\'nt any accidents this time... Happily...')
-		exit()
+		checks[0] = 1.0
+	elif flag:
+		print('There weren\'nt any overlapping cars this time... Let\'s check further...')
+		checks[0] = 0.5
 	potential_cars_labels = [label for label in overlapped]
 				
 	#------Checking acceleration anomaly--------#
@@ -319,7 +318,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	by taking the difference of the maximum acceleration and
 	average acceleration during overlapping condition'''
 
-	frames_before = [int(i) for i in range(frame_overlapped-frame_overlapped_interval, frame_overlapped)]
+	frames_before = [int(i) for i in range(frame_overlapped-frame_overlapped_interval, frame_overlapped-1)]
 
 	acc_average = []
 	for label in potential_cars_labels:
@@ -329,26 +328,28 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			acc_av = acc_av*(t-1)/t + cars_data[label]['acceleration'][frame]/t
 			t += 1
 		acc_average.append(acc_av)
+	frames_after = [int(i) for i in range(frame_overlapped, frame_overlapped+frame_overlapped_interval-1)]	
 	acc_maximum = []
 	for label in potential_cars_labels:
 		acc_max = 0
-		for frame in frames_before:
+		for frame in frames_after:
 			if cars_data[label]['acceleration'][frame]>acc_max:
 				acc_max = cars_data[label]['acceleration'][frame]
 		acc_maximum.append(acc_max)
 
 	acc_diff = np.mean(np.subtract(acc_maximum, acc_average))
 
-	if acc_diff > T_acc:
+	if acc_diff >= T_acc:
 		checks[1] = 1
 	else:
-		checks[0] = 0.5
+		checks[1] = 0.5
 
 	#----Angle Anomalies----#
 
 
 	#----Checkings----#
-	if (checks[0]+checks[1] + checks[2])>1.5:
+	print(sum(checks))
+	if (checks[0]+checks[1] + checks[2])>=1.49:
 		image = images_saved[frame_overlapped]
 		print('accident happened at frame ',frame_overlapped,' between cars ', overlapped)
 		for car_label in potential_cars_labels:
