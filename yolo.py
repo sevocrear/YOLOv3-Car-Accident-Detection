@@ -112,4 +112,4 @@ class YOLOv3():
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                     new_boxes.append(boxes[i])
                     new_boxes_id.append(i)
-        return boxes, new_boxes_id, image                    
+        return new_boxes, new_boxes_id, image                    

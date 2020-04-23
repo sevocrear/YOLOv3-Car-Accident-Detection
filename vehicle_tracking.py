@@ -12,15 +12,28 @@ def  centroid(box):
     centroids.append(centroid)
   return centroids
 
-def check_overlap(first_car,second_car, one_diag, second_diag, k):
-  dist = np.sqrt((first_car[0]-second_car[0])**2 + (first_car[1]-second_car[1])**2)
-  threshold = one_diag + second_diag
-  if (dist < threshold*k):
-    check = True
-  else:
-    check = False  
-  return check
+def check_odd_filter(x):
+	# It's function used for window and poly order calculation
+	# for moving averaging filter
 
+	# x is the size of the window
+	# y is the poly order. Should be less than x
+
+	coeff = 1
+	x = x// coeff # window size = (size of data)/coefficient
+	if x <= 2: 
+		x = 3
+	if x % 2 == 0:
+		x = x - 1
+	if x <= 3:
+		if x <=2:
+			y = 1
+		else:	
+			y = 2
+	else:
+		y = 3	
+	return (x, y)	
+  
 #function takes center of car from previous frame and list of centers from current frame
 # this funtion is used to helping decide which center from current frame belongs to which car
 def get_closest_center(old_center, new_centers):
@@ -116,7 +129,7 @@ class Path():
     def __init__(self,data):
         self.data = data
 
-    def interpolate(self, label, number=100, method ='slinear') :
+    def interpolate(self, label, number=100, method ='slinear'):
       x = np.array(self.data[label]['x'])
       y = np.array(self.data[label]['y'])
       time = np.array(self.data[label]['time'])
@@ -131,10 +144,11 @@ class Path():
       # Calculate the linear length along the line:
       distance = np.cumsum(np.sqrt(np.sum(np.diff(self.points, axis=0)**2, axis=1)))
       distance = np.insert(distance, 0, 0)/distance[-1]
-
+      
       # Interpolation itself:
       alpha = np.linspace(0, 1, number)
-
+      if len(distance) <3:
+        method = 'spline'
       interpolator =  interp1d(distance, self.points, kind=method, axis=0)
       interp_points = interpolator(alpha)
       return interp_points
