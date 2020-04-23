@@ -26,13 +26,13 @@ conf_param = 0.5 # confidence for YOLO detection
 W_show, H_show = 1152, 768 # Shape of images to show
 
 ''' Params for cars detection '''
-frame_start_with =310 # frame to start with
-frame_end_with = 340 # number of image frames to work with in each folder (dataset)
+frame_start_with =45 # frame to start with
+frame_end_with = 80 # number of image frames to work with in each folder (dataset)
 
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
 len_on_filter = 2 # minimum length of the data list to apply filter on it
 
-T_var = 0.3 # threshold in order to show only those cars that is moving... (0.5 is okay)
+T_var = 2 # threshold in order to show only those cars that is moving... (0.5 is okay)
 
 frame_overlapped_interval = 10 # the interval (- frame_overlapped_interval + frame; frame + frame_overlapped_interval) to analyze if there were accident or not
 
@@ -91,7 +91,6 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			# building cars data
 			cars_dict = BuildAndUpdate(new_boxes, cars_dict, update_times)
 			cars_labels = list(cars_dict)
-
 			for car_label in cars_labels:
 				car_path = cars_dict[car_label][0]
 				# plotting car path on image and printing car label
@@ -185,22 +184,17 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			for frame in frames:
 				for first_car in cars_labels_to_analyze:
 					for second_car in cars_labels_to_analyze:
-						if (second_car != first_car):
-							print('cars',first_car, second_car)
+						if (int(second_car) != int(first_car)):
 							check, intersection = check_overlap((cars_data[first_car]['x'][frame],cars_data[first_car]['y'][frame]),(cars_data[second_car]['x'][frame],cars_data[second_car]['y'][frame]), cars_data[first_car]['car diagonal'], cars_data[second_car]['car diagonal'])
-							if check and (overlapped.get(first_car) == None):
-								overlapped[first_car] = [intersection,0,0, frame]
-								flag = 0
-								accident_frames.add(frame)
-							if check and (overlapped.get(second_car) == None):
+							if check and (overlapped.get(second_car) == None) and (overlapped.get(first_car) == None):
 								overlapped[second_car] = [intersection,0,0, frame]
+								overlapped[first_car] = [intersection,0,0, frame]
 								flag = 0
 								accident_frames.add(frame)
 
 			if not flag:					
 				# print('labels of overlapped cars:', list(overlapped),'. Frames of potential accidents:', accident_frames)
 				potential_cars_labels = [label for label in list(overlapped)]
-
 					#------Checking acceleration anomaly--------#
 				'''When two vehicles are overlapping, we find the acceleration of the vehicles from their speeds captured in the
 				dictionary. We find the average acceleration of the vehicles
@@ -272,14 +266,14 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 					for label in potential_cars_labels_in_frame:
 						image = images_saved[frame_overlapped]
-						print('label', label, '\n')
+						# print('label', label, '\n')
 						print(overlapped[label], 'frame = ', counter+frame_overlapped + frame_start_with- 2*frame_overlapped_interval)
 						overlap = overlapped[label][0]
 						acc_anomaly = overlapped[label][1]
 						angle_anomaly = overlapped[label][2]
-						print('sum = ', overlap*0.5 + acc_anomaly*0.4+angle_anomaly*0.5)
+						print('sum = ', overlap*0.7 + acc_anomaly*0.27+angle_anomaly*0.9)
 						# if (overlap*0.7 + acc_anomaly*0.4+check_anom)>=2:
-						if (overlap*0.5 + acc_anomaly*0.4+angle_anomaly*0.5)>=2:
+						if (overlap*0.7 + acc_anomaly*0.25+angle_anomaly*0.9)>=2:
 							print('accident happened at frame ',counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped,' with car ', label)
 							cv2.circle(image, (int(cars_data[label]['x'][frame_overlapped]), int(cars_data[label]['y'][frame_overlapped])), 30,  (255,255,0), 2)
 							#saving output image in folder output/
