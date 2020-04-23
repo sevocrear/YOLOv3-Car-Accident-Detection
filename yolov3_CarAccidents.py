@@ -42,8 +42,8 @@ os.chdir(os.path.dirname(path_of_file))
 
 thr_param = 0.3 # threshold for YOLO detection
 conf_param = 0.5 # confidence for YOLO detection
-frame_start_with = 1 # frame to start with
-frame_end_with = 170 # number of image frames to work with in each folder (dataset)
+frame_start_with =40 # frame to start with
+frame_end_with = 90 # number of image frames to work with in each folder (dataset)
 
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
 len_on_filter = 2 # minimum length of the data list to apply filter on it
@@ -134,7 +134,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 					# filter out weak predictions by ensuring the detected
 					# probability is greater than the minimum probability
-					if confidence > conf_param and (classID == 2 or classID == 3 or classID == 5 or classID == 7):
+					if confidence > conf_param and (classID == 2 or classID == 3 or classID == 5 or classID == 7 or classID == 6):
 						# scale the bounding box coordinates back relative to the
 						# size of the image, keeping in mind that YOLO actually
 						# returns the center (x, y)-coordinates of the bounding
@@ -199,6 +199,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 			time_end = time.time()
 			print('FPS = ', 1/ (time_end - time_start))
 			# show the output image
+			image = cv2.resize(image,(840, 480))
 			cv2.imshow("Image", image)
 			if cv2.waitKey(1) == 27:
 				break
@@ -306,7 +307,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		checks[0] = 1.0
 	elif flag:
 		print('There weren\'nt any overlapping cars this time... Let\'s check further...')
-		checks[0] = 0.5
+		exit()
 	potential_cars_labels = [label for label in overlapped]
 				
 	#------Checking acceleration anomaly--------#
@@ -345,17 +346,17 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		checks[1] = 0.5
 
 	#----Angle Anomalies----#
-
+	## Will be added furhter
 
 	#----Checkings----#
 	print(sum(checks))
-	if (checks[0]+checks[1] + checks[2])>=1.49:
+	if (checks[0]+checks[1] + checks[2])>1.5:
 		image = images_saved[frame_overlapped]
 		print('accident happened at frame ',frame_overlapped,' between cars ', overlapped)
 		for car_label in potential_cars_labels:
 			cv2.circle(image, (int(cars_data[car_label]['x'][frame_overlapped]), int(cars_data[car_label]['y'][frame_overlapped])), 50,  (255,255,0), 2)
 		#saving output image in folder output/
-		cv2.imwrite('cars/accident.png', image)			
+		cv2.imwrite('cars/'+img_dir+'accident.png', image)			
 
 
 	#-----# Plots			
