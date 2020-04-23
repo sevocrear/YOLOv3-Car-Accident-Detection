@@ -12,6 +12,14 @@ def  centroid(box):
     centroids.append(centroid)
   return centroids
 
+def check_overlap(first_car,second_car, one_diag, second_diag, k):
+  dist = np.sqrt((first_car[0]-second_car[0])**2 + (first_car[1]-second_car[1])**2)
+  threshold = one_diag + second_diag
+  if (dist < threshold*k):
+    check = True
+  else:
+    check = False  
+  return check
 
 #function takes center of car from previous frame and list of centers from current frame
 # this funtion is used to helping decide which center from current frame belongs to which car
@@ -32,11 +40,11 @@ def get_closest_center(old_center, new_centers):
 
 
 # function to sort new values inside the dictionary 
-def update_dict(arrays, car_bounds, new_center,vector,distance ): 
+def update_dict(arrays, car_bounds, new_center,vector,distance, t): 
   arrays[0].append(new_center)
   arrays[1].append(vector)
   arrays[2].append(distance)
-  arrays[5] = car_bounds
+  arrays[5] =   [car_bounds[0], car_bounds[1],  int((t-1)*arrays[5][2]/t+car_bounds[2]/t), int((t-1)*arrays[5][3]/t+car_bounds[3]/t)]
   
  
   if len(arrays[2])<3:
@@ -53,7 +61,7 @@ def update_dict(arrays, car_bounds, new_center,vector,distance ):
 # if given dictionary (cars_dict) is empty, it builds a new one
 # if cars_dict is not empty, it updates values
 # this function calculates for each car path points(centers), direction vector, velocity, acceleration 
-def BuildAndUpdate(boxes, cars_dict):
+def BuildAndUpdate(boxes, cars_dict, update_times):
   # boxes[i] = [x, y, int(width), int(height), color]
   centers = centroid(boxes)
   if len(cars_dict)==0:             #to check if dictionary is empty 
@@ -65,7 +73,7 @@ def BuildAndUpdate(boxes, cars_dict):
       car_info[2].append(0) # velocity
       car_info[3].append(0) # acceleration
       car_info[4] = (boxes[i][4]) # color of the car
-      car_info[5] = boxes[0:4] # x,y,w,h
+      car_info[5] = boxes[i][0:4] # x,y,w,h
       cars_dict[label]= car_info
   else:
     cars_labels = list(cars_dict)         #getting list of all labels
@@ -79,7 +87,8 @@ def BuildAndUpdate(boxes, cars_dict):
         closest_center, vector, distance, idx = get_closest_center(old_center,centers)  
         car_bounds = boxes[idx][0:4]
         if distance <= min(car_bounds[2:4]):       #applying threshold to closest distance to see if it's close enough
-          cars_dict[i]= update_dict(cars_dict[i],car_bounds, closest_center, vector, distance)      #if distance less than threshold the position of car is updated
+          cars_dict[i]= update_dict(cars_dict[i],car_bounds, closest_center, vector, distance, update_times)      #if distance less than threshold the position of car is updated
+          update_times += 1
           del centers[idx]                  #delete center from list
           del boxes[idx]
     int_labels = []
@@ -94,7 +103,38 @@ def BuildAndUpdate(boxes, cars_dict):
         b = np.random.choice(255)
         color = (r,g,b)
         cars_dict[new_label] = [[center],[[[0,0]]],[0],[0], color, boxes[centers.index(center)][0:4]]
-
-        
-
   return cars_dict
+
+
+
+from scipy.interpolate import interp1d
+
+class Path():
+    """
+    interpolation methods: ['original', 'slinear', 'quadratic', 'cubic']
+    """
+    def __init__(self,data):
+        self.data = data
+
+    def interpolate(self, label, number=100, method ='slinear') :
+      x = np.array(self.data[label]['x'])
+      y = np.array(self.data[label]['y'])
+      time = np.array(self.data[label]['time'])
+      angle = np.array(self.data[label]['angle'])
+      acceleration = np.array(self.data[label]['velocity'])
+      velocity = np.array(self.data[label]['acceleration'])
+      self.points = np.stack((x, y, time, angle, velocity, acceleration), axis = 1)
+
+      if method == 'original':
+        return self.points
+
+      # Calculate the linear length along the line:
+      distance = np.cumsum(np.sqrt(np.sum(np.diff(self.points, axis=0)**2, axis=1)))
+      distance = np.insert(distance, 0, 0)/distance[-1]
+
+      # Interpolation itself:
+      alpha = np.linspace(0, 1, number)
+
+      interpolator =  interp1d(distance, self.points, kind=method, axis=0)
+      interp_points = interpolator(alpha)
+      return interp_points
