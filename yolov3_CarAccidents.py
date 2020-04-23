@@ -10,31 +10,11 @@ import os
 import matplotlib.pyplot as plt
 import glob
 from vehicle_tracking import * # functions for tracking
+from accident_detecting import *
+import yolo
 from scipy.signal import savgol_filter
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
-
-def check_odd_filter(x):
-	# It's function used for window and poly order calculation
-	# for moving averaging filter
-
-	# x is the size of the window
-	# y is the poly order. Should be less than x
-
-	coeff = 1
-	x = x// coeff # window size = (size of data)/coefficient
-	if x <= 2: 
-		x = 3
-	if x % 2 == 0:
-		x = x - 1
-	if x <= 3:
-		if x <=2:
-			y = 1
-		else:	
-			y = 2
-	else:
-		y = 3	
-	return (x, y)	
 
 
 path_of_file = os.path.abspath(__file__)
@@ -42,15 +22,16 @@ os.chdir(os.path.dirname(path_of_file))
 
 thr_param = 0.3 # threshold for YOLO detection
 conf_param = 0.5 # confidence for YOLO detection
-frame_start_with =40 # frame to start with
-frame_end_with = 90 # number of image frames to work with in each folder (dataset)
+W_show, H_show = 1152, 768 # Shape of images to show
+frame_start_with =280 # frame to start with
+frame_end_with = 320 # number of image frames to work with in each folder (dataset)
 
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
 len_on_filter = 2 # minimum length of the data list to apply filter on it
 
 T_var = 200 # threshold in order to show only those cars that is moving... (50 is okay)
 
-k_overlap = 0.3 # ratio (0-1) for overlapping issue | thresh_overlap = distance_between*k_overlap
+k_overlap = 0.25 # ratio (0-1) for overlapping issue | thresh_overlap = distance_between*k_overlap
 frame_overlapped_interval = 10 # the interval (- frame_overlapped_interval + frame; frame + frame_overlapped_interval) to analyze if there were accident or not
 
 T_acc = 1 # theshold in order to detect acceleration anomaly
@@ -72,6 +53,9 @@ configPath = os.path.sep.join(['yolo-coco/cfg', "yolov3.cfg"])
 # load our YOLO object detector trained on COCO dataset (80 classes)
 print("[INFO] loading YOLO from disk...")
 net = cv2.dnn.readNetFromDarknet(configPath, weightsPath)
+
+# Initialize made by us yolov3 object:
+yolov3 = yolo.YOLOv3(thr_param, conf_param, [2,3,5,6,7], net, 'tracking')
 
 for path in dataset_path: # Loop through folders with different video frames (situations on the road)
 	split_path = path.split('/')
@@ -101,109 +85,40 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		if type(image) is np.ndarray:	
 			time_start = time.time()
 
-			# load our input image and grab its spatial dimensions
-			(H, W) = image.shape[:2]
-
-			# determine only the *output* layer names that we need from YOLO
-			ln = net.getLayerNames()
-			ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
-
-			# construct a blob from the input image and then perform a forward
-			# pass of the YOLO object detector, giving us our bounding boxes and
-			# associated probabilities
-			blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (256, 192), # (96, 96) \ (192, 192) \ (256, 256) \ (384, 384)
-				swapRB=True, crop=False)
-			net.setInput(blob)
-			layerOutputs = net.forward(ln)
-
-			# initialize our lists of detected bounding boxes, confidences, and
-			# class IDs, respectively
-			boxes = []
-			confidences = []
-			classIDs = []
-
-			# loop over each of the layer outputs
-			for output in layerOutputs:
-				# loop over each of the detections
-				for detection in output:
-					# extract the class ID and confidence (i.e., probability) of
-					# the current object detection
-					scores = detection[5:]
-					classID = np.argmax(scores)
-					confidence = scores[classID]
-
-					# filter out weak predictions by ensuring the detected
-					# probability is greater than the minimum probability
-					if confidence > conf_param and (classID == 2 or classID == 3 or classID == 5 or classID == 7 or classID == 6):
-						# scale the bounding box coordinates back relative to the
-						# size of the image, keeping in mind that YOLO actually
-						# returns the center (x, y)-coordinates of the bounding
-						# box followed by the boxes' width and height
-						box = detection[0:4] * np.array([W, H, W, H])
-						(centerX, centerY, width, height) = box.astype("int")
-
-						# use the center (x, y)-coordinates to derive the top and
-						# and left corner of the bounding box
-						x = int(centerX - (width / 2))
-						y = int(centerY - (height / 2))
-
-						# update our list of bounding box coordinates, confidences,
-						# and class IDs
-						boxes.append([x, y, int(width), int(height)])
-						confidences.append(float(confidence))
-						classIDs.append(classID)
-
-			# apply non-maxima suppression to suppress weak, overlapping bounding
-			# boxes
-			idxs = cv2.dnn.NMSBoxes(boxes, confidences, conf_param,
-				thr_param)
-
-			# ensure at least one detection exists
-			if len(idxs) > 0:
-				# loop over the indexes we are keeping
-				# building a list or centers we're keeping
-				new_boxes = []
-				for i in idxs.flatten():
-					r = np.random.choice(255)
-					g = np.random.choice(255)
-					b = np.random.choice(255)
-					color = (r,g,b)
-					boxes[i].append(color)
-					new_boxes.append(boxes[i]) 
+			new_boxes, new_boxes_id = yolov3.detect_objects(image)
 					
-					
-				# building cars data
-				cars_dict = BuildAndUpdate(new_boxes, cars_dict, update_times)
-				cars_labels = list(cars_dict)
+			# building cars data
+			cars_dict = BuildAndUpdate(new_boxes, cars_dict, update_times)
+			cars_labels = list(cars_dict)
 
-				for car_label in cars_labels:
-					car_path = cars_dict[car_label][0]
-					# plotting car path on image and printing car label
-					if len(car_path)> 1:
-						car_path = np.asarray(car_path,dtype=np.int32)
-						car_path = car_path.reshape((-1,1,2))
-						cv2.polylines(image,car_path,True, cars_dict[car_label][4],3)
-						label_location = car_path[len(car_path)-1][0]
-						cv2.putText(image, car_label, (label_location[0]+5, label_location[1]+5), cv2.FONT_HERSHEY_SIMPLEX,
-						0.5, cars_dict[car_label][4], 2)
-						cv2.circle(image, (label_location[0], label_location[1]), 4, cars_dict[car_label][4],2)
-						x = cars_dict[car_label][5][0]
-						y = cars_dict[car_label][5][1]
-						w = cars_dict[car_label][5][2]
-						h = cars_dict[car_label][5][3]
-						cv2.rectangle(image, (x, y), (x+w, y+h),cars_dict[car_label][4], 2)
+			for car_label in cars_labels:
+				car_path = cars_dict[car_label][0]
+				# plotting car path on image and printing car label
+				if len(car_path)> 1:
+					car_path = np.asarray(car_path,dtype=np.int32)
+					car_path = car_path.reshape((-1,1,2))
+					cv2.polylines(image,car_path,True, cars_dict[car_label][4],3)
+					label_location = car_path[len(car_path)-1][0]
+					cv2.putText(image, car_label, (label_location[0]+5, label_location[1]+5), cv2.FONT_HERSHEY_SIMPLEX,
+					0.5, cars_dict[car_label][4], 2)
+					cv2.circle(image, (label_location[0], label_location[1]), 4, cars_dict[car_label][4],2)
+					x = cars_dict[car_label][5][0]
+					y = cars_dict[car_label][5][1]
+					w = cars_dict[car_label][5][2]
+					h = cars_dict[car_label][5][3]
+					cv2.rectangle(image, (x, y), (x+w, y+h),cars_dict[car_label][4], 2)
 
-			cv2.putText(image, 'frame ' + str(frame_start_with+counter), (20, image.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX,
-						3, (255,255,200), 2)			
+		cv2.putText(image, 'frame ' + str(frame_start_with+counter), (20, image.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX,
+					3, (255,255,200), 2)			
 
-			time_end = time.time()
-			print('FPS = ', 1/ (time_end - time_start))
-			# show the output image
-			image = cv2.resize(image,(840, 480))
-			cv2.imshow("Image", image)
-			if cv2.waitKey(1) == 27:
-				break
-			counter +=1
+		time_end = time.time()
+		print('FPS = ', 1/ (time_end - time_start))
+		# show the output image
+		image = cv2.resize(image,(840, 480))
+		cv2.imshow("Image", image)
+		if cv2.waitKey(1) == 27:
+			break
+		counter +=1
 
 	#saving output image in folder output/
 	cv2.imwrite('output/'+img_dir+'_final_frame.png', image)
@@ -350,7 +265,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 
 	#----Checkings----#
 	print(sum(checks))
-	if (checks[0]+checks[1] + checks[2])>1.5:
+	if (checks[0]+checks[1] + checks[2])>=1.5:
 		image = images_saved[frame_overlapped]
 		print('accident happened at frame ',frame_overlapped,' between cars ', overlapped)
 		for car_label in potential_cars_labels:
