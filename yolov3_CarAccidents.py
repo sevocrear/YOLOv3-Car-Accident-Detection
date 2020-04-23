@@ -42,8 +42,8 @@ os.chdir(os.path.dirname(path_of_file))
 
 thr_param = 0.3 # threshold for YOLO detection
 conf_param = 0.5 # confidence for YOLO detection
-frame_start_with = 1
-frame_end_with = 160 # number of image frames to work with in each folder (dataset)
+frame_start_with = 140
+frame_end_with = 170 # number of image frames to work with in each folder (dataset)
 
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
 len_on_filter = 2 # minimum length of the data list to apply filter on it
@@ -268,7 +268,8 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	cars_labels_to_analyze = []
 	for label in cars_labels: 
 		# Data for a three-dimensional line
-		if np.var(np.sqrt(cars_data[label]['x']**2+cars_data[label]['y']**2)) <T_var:
+		print('np.var',np.var(np.sqrt(np.power(cars_data[label]['x'],2)+np.power(cars_data[label]['y'],2))))
+		if np.var(np.sqrt(np.power(cars_data[label]['x'],2)+np.power(cars_data[label]['y'],2))) <T_var:
 			del cars_data[label]
 		else:	
 			cars_labels_to_analyze.append(label)
