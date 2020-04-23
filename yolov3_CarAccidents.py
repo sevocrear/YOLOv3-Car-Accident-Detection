@@ -193,7 +193,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 						h = cars_dict[car_label][5][3]
 						cv2.rectangle(image, (x, y), (x+w, y+h),cars_dict[car_label][4], 2)
 
-			cv2.putText(image, 'frame ' + str(counter), (20, image.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX,
+			cv2.putText(image, 'frame ' + str(frame_start_with+counter), (20, image.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX,
 						3, (255,255,200), 2)			
 
 			time_end = time.time()
@@ -303,7 +303,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 						frame_overlapped = frame
 						flag = 0	
 	if not flag:					
-		print('labels of overlapped cars:', overlapped,'. Frame of potential accident:', frame_overlapped)
+		print('labels of overlapped cars:', overlapped,'. Frame of potential accident:', frame_start_with + frame_overlapped)
 		checks[0] = 1
 	else:
 		print('There weren\'nt any accidents this time... Happily...')
@@ -350,15 +350,9 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	#----Checkings----#
 	if (checks[0]+checks[1] + checks[2])>1.5:
 		image = images_saved[frame_overlapped]
-		cv2.imshow('Car Accident',image)
-		if cv2.waitKey(1) == 27:
-				break
-		time.sleep(3)
 		print('accident happened at frame ',frame_overlapped,' between cars ', overlapped)
 		for car_label in potential_cars_labels:
 			cv2.circle(image, (int(cars_data[car_label]['x'][frame_overlapped]), int(cars_data[car_label]['y'][frame_overlapped])), 50,  (255,255,0), 2)
-
-		cv2.putText(image, 'frame ' + str(frame_overlapped), (20, image.shape[0]-20), cv2.FONT_HERSHEY_SIMPLEX, 3, (255,255,200), 2)
 		#saving output image in folder output/
 		cv2.imwrite('cars/accident.png', image)			
 
