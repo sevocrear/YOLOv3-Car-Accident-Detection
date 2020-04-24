@@ -26,8 +26,8 @@ conf_param = 0.5 # confidence for YOLO detection
 W_show, H_show = 1152, 768 # Shape of images to show
 
 ''' Params for cars detection '''
-frame_start_with =45 # frame to start with
-frame_end_with = 80 # number of image frames to work with in each folder (dataset)
+frame_start_with =130 # frame to start with
+frame_end_with = 180 # number of image frames to work with in each folder (dataset)
 
 filter_flag = 1 # use moving averaging filter or not (1-On, 0 - Off)
 len_on_filter = 2 # minimum length of the data list to apply filter on it
@@ -39,13 +39,15 @@ frame_overlapped_interval = 10 # the interval (- frame_overlapped_interval + fra
 angle_threshold = 1 #threshold to detect crash angle
 trajectory_thresold = 0.1 #threshold to detect change in path direction
 
+
+
 data_dir = "Dataset/" 	#dataset directory
 dataset_path = glob.glob(data_dir+"*/") 		#reading all sub-directories in folder
 print('Sub-directories',dataset_path)
 
-# load the COCO class labels our YOLO model was trained on
-labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
-LABELS = open(labelsPath).read().strip().split("\n")
+# # load the COCO class labels our YOLO model was trained on
+# labelsPath = os.path.sep.join(['yolo-coco', "coco.names"])
+# LABELS = open(labelsPath).read().strip().split("\n")
 
 # derive the paths to the YOLO weights and model configuration
 weightsPath = os.path.sep.join(['yolo-coco/weights', "yolov3.weights"])
@@ -160,7 +162,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 				cars_data[label]['angle'] = angle
 				cars_data[label]['velocity'] = velocity
 				cars_data[label]['acceleration'] = acceleration
-				cars_data[label]['car diagonal'] = np.sqrt(w**2+h**2)/2
+				cars_data[label]['car diagonal'] = np.sqrt(w**2+h**2)//2
 			
 			path = Path(cars_data)
 
@@ -186,6 +188,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 					for second_car in cars_labels_to_analyze:
 						if (int(second_car) != int(first_car)):
 							check, intersection = check_overlap((cars_data[first_car]['x'][frame],cars_data[first_car]['y'][frame]),(cars_data[second_car]['x'][frame],cars_data[second_car]['y'][frame]), cars_data[first_car]['car diagonal'], cars_data[second_car]['car diagonal'])
+							# print(intersection, check, frame)
 							if check and (overlapped.get(second_car) == None) and (overlapped.get(first_car) == None):
 								overlapped[second_car] = [intersection,0,0, frame]
 								overlapped[first_car] = [intersection,0,0, frame]
@@ -246,34 +249,35 @@ for path in dataset_path: # Loop through folders with different video frames (si
 					for label in potential_cars_labels_in_frame:
 						
 						angle_difference = check_angle_anomaly(cars_data[label]['angle'],frame_overlapped,frame_overlapped_interval)
-						overlapped[label][2] = angle_difference
+						# overlapped[label][2] = angle_difference
 
-						# angle_anomalies.append(angle_difference)
+						angle_anomalies.append(angle_difference)
 
-					# if len(angle_anomalies)>0:	
-					# 	max_angle_change = max(angle_anomalies)
-					# 	# print('change in angle :', max_angle_change)
-					# 	if max_angle_change >= trajectory_thresold:
-					# 		checks_anom = 1
-					# 	else:
-					# 		checks_anom = 0.5
-					# else:
-					# 	checks_anom = 0.5
+					if len(angle_anomalies)>0:	
+						max_angle_change = max(angle_anomalies)
+						# print('change in angle :', max_angle_change)
+						if max_angle_change >= trajectory_thresold:
+							checks_anom = 1
+						else:
+							checks_anom = 0.5
+					else:
+						checks_anom = 0.5
+					for label in potential_cars_labels_in_frame:
+						overlapped[label][2] = checks_anom
 
-
-					# #----Checkings----#
+					#----Checkings----#
 
 
 					for label in potential_cars_labels_in_frame:
 						image = images_saved[frame_overlapped]
 						# print('label', label, '\n')
-						print(overlapped[label], 'frame = ', counter+frame_overlapped + frame_start_with- 2*frame_overlapped_interval)
+						print(label, overlapped[label], 'frame = ', counter+frame_overlapped + frame_start_with- 2*frame_overlapped_interval)
 						overlap = overlapped[label][0]
 						acc_anomaly = overlapped[label][1]
 						angle_anomaly = overlapped[label][2]
-						print('sum = ', overlap*0.7 + acc_anomaly*0.27+angle_anomaly*0.9)
+						print('sum = ', overlap*1 + acc_anomaly*0.10+angle_anomaly*0.7)
 						# if (overlap*0.7 + acc_anomaly*0.4+check_anom)>=2:
-						if (overlap*0.7 + acc_anomaly*0.25+angle_anomaly*0.9)>=2:
+						if (overlap*1 + acc_anomaly*0.10+angle_anomaly*0.7)>=1.8:
 							print('accident happened at frame ',counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped,' with car ', label)
 							cv2.circle(image, (int(cars_data[label]['x'][frame_overlapped]), int(cars_data[label]['y'][frame_overlapped])), 30,  (255,255,0), 2)
 							#saving output image in folder output/

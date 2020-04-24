@@ -23,7 +23,7 @@ def check_crash_angle(angle_1st_car,angle_2nd_car,threshold):
 def check_overlap(first_car,second_car, one_diag, second_diag):
   dist = np.sqrt((first_car[0]-second_car[0])**2 + (first_car[1]-second_car[1])**2)
   threshold = (one_diag + second_diag)
-  if (dist < threshold):
+  if (dist < threshold/2):
     check = True
   else:
     check = False  
