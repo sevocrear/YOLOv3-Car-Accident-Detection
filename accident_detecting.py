@@ -21,11 +21,11 @@ def check_crash_angle(angle_1st_car,angle_2nd_car,threshold):
   return check
   
 def check_overlap(first_car,second_car, one_diag, second_diag):
-  dist_x = 2*np.abs(first_car[0]-second_car[0])
-  dist_y = 2*np.abs(first_car[1]-second_car[1])
-  diag_first = one_diag[0]+second_diag[0]
-  diag_second = one_diag[1] + second_diag[1]
-  if dist_x<diag_first and dist_y<diag_second:
+  dist_x = np.abs(first_car[0]-second_car[0])
+  dist_y = np.abs(first_car[1]-second_car[1])
+  diag_x = one_diag[0]+second_diag[0]
+  diag_y = one_diag[1] + second_diag[1]
+  if dist_x<diag_x and dist_y<diag_y:
     check = 1
   else:
     check = 0 
@@ -110,3 +110,4 @@ def plot3D_graph(cars_data,frames, potential_cars_labels, W,H, frame_overlapped,
     plt.savefig('figures/'+img_dir+'frame_'+str(actual_frame)+'_y_x_t.png')
     if show == 'Yes':
       plt.show()  
+#
