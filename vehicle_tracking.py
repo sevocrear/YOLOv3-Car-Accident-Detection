@@ -152,3 +152,5 @@ class Path():
       interpolator =  interp1d(distance, self.points, kind=method, axis=0)
       interp_points = interpolator(alpha)
       return interp_points
+
+    #
