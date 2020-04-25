@@ -4,7 +4,7 @@ In this repository you could find several scripts in order to implement YOLOv3 a
 
 At first, clone the repository:
 ```bash
-git clone git@github.com:Terminateit/YOLOv3-Car-Accident-Detection.git
+git clone https://github.com/Terminateit/YOLOv3-Car-Accident-Detection.git
 ```
 
 then go to the folder yolo-coco in the repository:
