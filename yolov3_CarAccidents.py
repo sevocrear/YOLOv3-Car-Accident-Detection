@@ -34,7 +34,7 @@ len_on_filter = 2 # minimum length of the data list to apply filter on it
 
 T_var = 2 # threshold in order to show only those cars that is moving... (0.5 is okay)
 
-frame_overlapped_interval = 20 # the interval (- frame_overlapped_interval + frame; frame + frame_overlapped_interval) to analyze if there were accident or not
+frame_overlapped_interval = 10 # the interval (- frame_overlapped_interval + frame; frame + frame_overlapped_interval) to analyze if there were accident or not
 
 angle_threshold = 1 #threshold to detect crash angle
 trajectory_thresold = 0.1 #threshold to detect change in path direction
@@ -82,7 +82,12 @@ for path in dataset_path: # Loop through folders with different video frames (si
 	images_saved = []
 	for f1 in files:
 		image = cv2.imread(f1)
-		images_saved.append(image)	
+		for f2 in files:
+			while files.index(f2)-files.index(f1) < 2*frame_overlapped_interval:
+				if files.index(f2) < len(files)-1:	
+					img_f2 = cv2.imread(f2)
+					if type(img_f2) is np.ndarray:
+						images_saved.append(img_f2)
 		# print('Processing frame:'+str(counter+frame_start_with)+'/'+str(frame_end_with),'in folder:'+folders[0]+'...')
 
 		if type(image) is np.ndarray:	
@@ -177,124 +182,123 @@ for path in dataset_path: # Loop through folders with different video frames (si
 					cars_data[label]['acceleration'] = interp_points[:,5]
 
 				#------Checking vehicle overlapps--------#
-				overlapped = {}
-				flag = 1
+				flag_overlap = 1
 				frames = [int(i) for i in range(2*frame_overlapped_interval)]
-				accident_frames = set()
 				for frame in frames:
+					overlapped = {}
+					accident_frames = set()
 					for first_car in cars_labels_to_analyze:
 						for second_car in cars_labels_to_analyze:
-							if (int(second_car) != int(first_car)):
+							if (second_car != first_car):
 								check = check_overlap((cars_data[first_car]['x'][frame],cars_data[first_car]['y'][frame]),(cars_data[second_car]['x'][frame],cars_data[second_car]['y'][frame]), cars_data[first_car]['car diagonal'], cars_data[second_car]['car diagonal'])
 								# print(intersection, check, frame)
-								if check and (overlapped.get(second_car) == None) and (overlapped.get(first_car) == None):
-									overlapped[second_car] = [check,0,0, frame]
-									overlapped[first_car] = [check,0,0, frame]
+								if check:
 									flag = 0
-									accident_frames.add(frame)
+									if (overlapped.get(second_car) == None):
+										overlapped[second_car] = [check,0,0, frame]
+									if (overlapped.get(first_car) == None):
+										overlapped[first_car] = [check,0,0, frame]
+										flag_overlap = 0
+										accident_frames.add(frame)
 
-				if not flag:					
-					# print('labels of overlapped cars:', list(overlapped),'. Frames of potential accidents:', accident_frames)
-					potential_cars_labels = [label for label in list(overlapped)]
-						#------Checking acceleration anomaly--------#
-					'''When two vehicles are overlapping, we find the acceleration of the vehicles from their speeds captured in the
-					dictionary. We find the average acceleration of the vehicles
-					for N frames before the overlapping condition and the
-					maximum acceleration of the vehicles N frames after it.
-					We find the change in accelerations of the individual vehicles
-					by taking the difference of the maximum acceleration and
-					average acceleration during overlapping condition'''
-					for frame_overlapped in accident_frames:
-						flag = 0
-						potential_cars_labels_in_frame = []
-						for label in potential_cars_labels:
-							if overlapped[label][3] == frame_overlapped:
-								potential_cars_labels_in_frame.append(label)
-								flag = 1
-						if not flag:
-							continue
-						if frame_overlapped-frame_overlapped_interval< 0:
-							minus = frame_overlapped-frame_overlapped_interval
-							frames_before = [int(i) for i in range(frame_overlapped-(frame_overlapped_interval+minus), frame_overlapped)]
-						else:	
-							frames_before = [int(i) for i in range(frame_overlapped-frame_overlapped_interval, frame_overlapped)]
+					if not flag_overlap:					
+						# print('labels of overlapped cars:', list(overlapped),'. Frames of potential accidents:', accident_frames)
+						potential_cars_labels = [label for label in list(overlapped)]
+							#------Checking acceleration anomaly--------#
+						'''When two vehicles are overlapping, we find the acceleration of the vehicles from their speeds captured in the
+						dictionary. We find the average acceleration of the vehicles
+						for N frames before the overlapping condition and the
+						maximum acceleration of the vehicles N frames after it.
+						We find the change in accelerations of the individual vehicles
+						by taking the difference of the maximum acceleration and
+						average acceleration during overlapping condition'''
+						for frame_overlapped in accident_frames:
+							potential_cars_labels_in_frame = []
+							for label in potential_cars_labels:
+									potential_cars_labels_in_frame.append(label)
 
-						acc_average = []
-						for label in potential_cars_labels_in_frame:
-							acc_av = 0
-							t = 1
-							for frame in frames_before:
-								acc_av = acc_av*(t-1)/t + cars_data[label]['acceleration'][frame]/t
-								t += 1
-							acc_average.append(acc_av)
-						frames_after = [int(i) for i in range(frame_overlapped, frame_overlapped+frame_overlapped_interval)]	
-						acc_maximum = []
-						for label in potential_cars_labels_in_frame:
-							acc_max = 0
-							for frame in frames_after:
-								if frame<2*frame_overlapped_interval:
-									if cars_data[label]['acceleration'][frame]>acc_max:
-										acc_max = cars_data[label]['acceleration'][frame]
-							acc_maximum.append(acc_max)
+							if frame_overlapped-frame_overlapped_interval< 0:
+								minus = frame_overlapped-frame_overlapped_interval
+								frames_before = [int(i) for i in range(frame_overlapped-(frame_overlapped_interval+minus), frame_overlapped)]
+							else:	
+								frames_before = [int(i) for i in range(frame_overlapped-frame_overlapped_interval, frame_overlapped)]
 
-						acc_diff = np.subtract(acc_maximum, acc_average)
-						for label in potential_cars_labels_in_frame:
-							overlapped[label][1] = np.abs(acc_diff[potential_cars_labels_in_frame.index(label)])
+							acc_average = []
+							for label in potential_cars_labels_in_frame:
+								acc_av = 0
+								t = 1
+								for frame in frames_before:
+									acc_av = acc_av*(t-1)/t + cars_data[label]['acceleration'][frame]/t
+									t += 1
+								acc_average.append(acc_av)
+							frames_after = [int(i) for i in range(frame_overlapped, frame_overlapped+frame_overlapped_interval)]	
+							acc_maximum = []
+							for label in potential_cars_labels_in_frame:
+								acc_max = 0
+								for frame in frames_after:
+									if frame<2*frame_overlapped_interval:
+										if cars_data[label]['acceleration'][frame]>acc_max:
+											acc_max = cars_data[label]['acceleration'][frame]
+								acc_maximum.append(acc_max)
+
+							acc_diff = np.subtract(acc_maximum, acc_average)
+							for label in potential_cars_labels_in_frame:
+								overlapped[label][1] = np.abs(acc_diff[potential_cars_labels_in_frame.index(label)])
 
 
-						#----Angle Anomalies----#
-						angle_anomalies = []
-						for label in potential_cars_labels_in_frame:
-							
-							angle_difference = check_angle_anomaly(cars_data[label]['angle'],frame_overlapped,frame_overlapped_interval)
-							# overlapped[label][2] = angle_difference
+							#----Angle Anomalies----#
+							angle_anomalies = []
+							for label in potential_cars_labels_in_frame:
+								
+								angle_difference = check_angle_anomaly(cars_data[label]['angle'],frame_overlapped,frame_overlapped_interval)
+								# overlapped[label][2] = angle_difference
 
-							angle_anomalies.append(angle_difference)
+								angle_anomalies.append(angle_difference)
 
-						if len(angle_anomalies)>0:	
-							max_angle_change = max(angle_anomalies)
-							# print('change in angle :', max_angle_change)
-							if max_angle_change >= trajectory_thresold:
-								checks_anom = 1
+							if len(angle_anomalies)>0:	
+								max_angle_change = max(angle_anomalies)
+								# print('change in angle :', max_angle_change)
+								if max_angle_change >= trajectory_thresold:
+									checks_anom = 1
+								else:
+									checks_anom = 0.5
 							else:
 								checks_anom = 0.5
-						else:
-							checks_anom = 0.5
-						for label in potential_cars_labels_in_frame:
-							overlapped[label][2] = checks_anom
+							for label in potential_cars_labels_in_frame:
+								overlapped[label][2] = checks_anom
 
-						#----Checkings----#
+							#----Checkings----#
 
-
-						for label in potential_cars_labels_in_frame:
 							image = images_saved[frame_overlapped]
-							# print('label', label, '\n')
-							print(label, overlapped[label], 'frame = ', counter+frame_overlapped + frame_start_with- 2*frame_overlapped_interval)
-							overlap = overlapped[label][0]
-							acc_anomaly = overlapped[label][1]
-							angle_anomaly = overlapped[label][2]
-							print('sum = ', overlap*0.5 + acc_anomaly*0.10+angle_anomaly*0.7)
-							# if (overlap*0.7 + acc_anomaly*0.4+check_anom)>=2:
-							if (overlap*0.5 + acc_anomaly*0.10+angle_anomaly*0.7)>=1.5:
-								print('accident happened at frame ',counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped,' with car ', label)
-								cv2.circle(image, (int(cars_data[label]['x'][frame_overlapped]), int(cars_data[label]['y'][frame_overlapped])), 30,  (255,255,0), 2)
-								#saving output image in folder output/
-								cv2.imwrite('cars/'+img_dir+'_accident_in_frame_'+str(counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped)+'.png', image)		
+							flag_accident = 0
+							for label in potential_cars_labels_in_frame:
+								# print('label', label, '\n')
+								print(label, overlapped[label], 'frame = ', counter+frame_overlapped + frame_start_with- 2*frame_overlapped_interval)
+								overlap = overlapped[label][0]
+								acc_anomaly = overlapped[label][1]
+								angle_anomaly = overlapped[label][2]
+								print('sum = ', overlap*0.5 + acc_anomaly*0.10+angle_anomaly*0.7)
+								# if (overlap*0.7 + acc_anomaly*0.4+check_anom)>=2:
+								if (overlap*0.5 + acc_anomaly*0.10+angle_anomaly*0.7)>=1.5:
+									print('accident happened at frame ',counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped,' with car ', label)
+									cv2.circle(image, (int(cars_data[label]['x'][frame_overlapped]), int(cars_data[label]['y'][frame_overlapped])), 30,  (255,255,0), 2)
+									#saving output image in folder output/
+									flag_accident = 1
+								if flag_accident:	
+									cv2.imwrite('cars/'+img_dir+'_accident_in_frame_'+str(counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped)+'.png', image)		
+									#-----# Plots			
+									plot3D_graph(cars_data,frames, potential_cars_labels_in_frame, W,H, frame_overlapped, frame_overlapped_interval, img_dir, counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped, show = 'No')
 
-								#-----# Plots			
-								plot3D_graph(cars_data,frames, potential_cars_labels_in_frame, W,H, frame_overlapped, frame_overlapped_interval, img_dir, counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped, show = 'No')
+									plot2D_graphs(cars_data, frames, potential_cars_labels_in_frame, frame_overlapped,  frame_overlapped_interval, img_dir, counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped, show = 'No')
+					elif flag_overlap:
+						# print('There weren\'nt any overlapping cars this time... Let\'s check further...')
+						update_times = 1
+						cars_dict = {}
+						images_saved = []
 
-								plot2D_graphs(cars_data, frames, potential_cars_labels_in_frame, frame_overlapped,  frame_overlapped_interval, img_dir, counter -2*frame_overlapped_interval+ frame_start_with + frame_overlapped, show = 'No')
-
-					update_times = 1
-					cars_dict = {}
-					images_saved = []
-
-				elif flag:
-					print('There weren\'nt any overlapping cars this time... Let\'s check further...')
-					update_times = 1
-					cars_dict = {}
-					images_saved = []
+				update_times = 1
+				cars_dict = {}
+				images_saved = []
 
 			counter +=1	
 			image = cv2.resize(image,(W_show, H_show))
