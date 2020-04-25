@@ -4,7 +4,7 @@ cd ..
 echo "Creating needed folders ..."
 mkdir -p figures output cars
 echo "Downloading needed datasets..."
-wget --load-cookies /tmp/cookies.txt "https://drive.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://drive.google.com/uc?export=download&id=1w4dkVx03hSe3G-cwItDFTDPLqPBWuBhO' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1w4dkVx03hSe3G-cwItDFTDPLqPBWuBhO" -O Dataset.zip && rm -rf /tmp/cookies.txt
+wget --load-cookies /tmp/cookies.txt "https://drive.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://drive.google.com/uc?export=download&id=1JjggC0TSYrQMEkTVo8n5RgjtlweuOwyp' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1JjggC0TSYrQMEkTVo8n5RgjtlweuOwyp" -O Dataset.zip && rm -rf /tmp/cookies.txt
 echo "Unzipping Dataset folder ..."
 sudo apt install unzip
 unzip Dataset.zip

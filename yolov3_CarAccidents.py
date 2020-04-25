@@ -371,7 +371,7 @@ for path in dataset_path: # Loop through folders with different video frames (si
 		for car_label in potential_cars_labels:
 			cv2.circle(image, (int(cars_data[car_label]['x'][frame_overlapped]), int(cars_data[car_label]['y'][frame_overlapped])), 50,  (255,255,0), 2)
 		#saving output image in folder output/
-		cv2.imwrite('cars/accident.png', image)			
+		cv2.imwrite('cars/'+img_dir+'accident.png', image)			
 
 
 	#-----# Plots			
