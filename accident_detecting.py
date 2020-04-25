@@ -21,20 +21,22 @@ def check_crash_angle(angle_1st_car,angle_2nd_car,threshold):
   return check
   
 def check_overlap(first_car,second_car, one_diag, second_diag):
-  dist = np.sqrt((first_car[0]-second_car[0])**2 + (first_car[1]-second_car[1])**2)
-  threshold = (one_diag + second_diag)
-  if (dist < threshold):
-    check = True
+  dist_x = 2*np.abs(first_car[0]-second_car[0])
+  dist_y = 2*np.abs(first_car[1]-second_car[1])
+  diag_first = one_diag[0]+second_diag[0]
+  diag_second = one_diag[1] + second_diag[1]
+  if dist_x<diag_first and dist_y<diag_second:
+    check = 1
   else:
-    check = False  
-  return check, dist/threshold
+    check = 0 
+  return check
 
 def check_path_variance(cars_data,cars_labels,  threshold):  
     cars_labels_to_analyze = []
     for label in cars_labels: 
         # Data for a three-dimensional line
         variance = np.abs(np.var(cars_data[label]['x'])) + np.abs(np.var(cars_data[label]['y']))
-        ratio = variance/(cars_data[label]['car diagonal'])
+        ratio = variance/(np.sqrt(cars_data[label]['car diagonal'][0]**2+cars_data[label]['car diagonal'][1]**2))
         if ratio < threshold:
             del cars_data[label]
             cars_labels.remove(label)
@@ -42,7 +44,7 @@ def check_path_variance(cars_data,cars_labels,  threshold):
             cars_labels_to_analyze.append(label)         
     return cars_labels_to_analyze    
 
-def plot2D_graphs(cars_data, frames, potential_cars_labels, frame_overlapped,  frame_overlapped_interval, img_dir, actual_frame):    
+def plot2D_graphs(cars_data, frames, potential_cars_labels, frame_overlapped,  frame_overlapped_interval, img_dir, actual_frame, show):    
     plt.figure(figsize=(10,8))
     plt.subplots_adjust(wspace=0.5)
     plt.subplot(221)
@@ -83,9 +85,10 @@ def plot2D_graphs(cars_data, frames, potential_cars_labels, frame_overlapped,  f
     plt.title('cars accelerations')
     plt.grid()
     plt.savefig('figures/'+img_dir+'frame_'+str(actual_frame)+'_Info.png')
-    plt.show()
+    if show == 'Yes':
+      plt.show()
 
-def plot3D_graph(cars_data,frames, potential_cars_labels, W,H, frame_overlapped, frame_overlapped_interval, img_dir, actual_frame):
+def plot3D_graph(cars_data,frames, potential_cars_labels, W,H, frame_overlapped, frame_overlapped_interval, img_dir, actual_frame, show):
     fig = plt.figure()
     ax = fig.gca(projection='3d')	
     for label in potential_cars_labels: 	
@@ -105,4 +108,5 @@ def plot3D_graph(cars_data,frames, potential_cars_labels, W,H, frame_overlapped,
     ax.set_zlabel('frames')
     ax.set_title('cars trajectories')
     plt.savefig('figures/'+img_dir+'frame_'+str(actual_frame)+'_y_x_t.png')
-    plt.show()    
+    if show == 'Yes':
+      plt.show()  
