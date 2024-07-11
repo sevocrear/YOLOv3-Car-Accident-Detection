@@ -8,6 +8,7 @@ def check_overlap(first_car,second_car, one_diag, second_diag, k):
     check = False  
   return check
 
+
 ##---angle anomalies functions#
 #check anomaly in trajectory by analyzing angular acceleration
 def check_angle_anomaly(angle_list_1st,frame,check_frames):
